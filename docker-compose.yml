@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db:
     image: postgres:16-alpine
@@ -30,7 +28,7 @@ services:
   api:
     build:
       context: ./CRM.API
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.deploy
     ports:
       - "8080:8080"
     depends_on:
