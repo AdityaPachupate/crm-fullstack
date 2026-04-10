@@ -1,0 +1,57 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>eb621e0e-d3ff-49a6-aca1-b972b1f35579</UserSecretsId>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <DockerfileContext>.</DockerfileContext>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AspNetCore.HealthChecks.NpgSql" Version="9.0.0" />
+    <PackageReference Include="DotNetEnv" Version="3.1.1" />
+    <PackageReference Include="FluentValidation" Version="12.1.1" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
+    <PackageReference Include="Mapster" Version="10.0.6" />
+    <PackageReference Include="MediatR" Version="12.5.0" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.11">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.2" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.4" />
+    <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include=" Features\Lookups\AddLookup\" />
+    <Folder Include=" Features\Lookups\GetLookups\" />
+    <Folder Include="Common\Constants\" />
+    <Folder Include="Common\Enums\" />
+    <Folder Include="Common\Extensions\" />
+    <Folder Include="Common\Interfaces\" />
+    <Folder Include="Domain\" />
+    <Folder Include="Features\Bills\CreateBill\" />
+    <Folder Include="Features\Bills\GetLeadBills\" />
+    <Folder Include="Features\Enrollments\CreateEnrollment\" />
+    <Folder Include="Features\Enrollments\GetEnrollment\" />
+    <Folder Include="Features\FollowUps\CompleteFollowUp\" />
+    <Folder Include="Features\FollowUps\CreateFollowUp Features\" />
+    <Folder Include="Features\FollowUps\GetTodayFollowUps\" />
+    <Folder Include="Features\Leads\CreateLead\" />
+    <Folder Include="Features\Leads\UpdateLeadStatus\" />
+    <Folder Include="Features\Lookups\DeleteLookup\" />
+    <Folder Include="Features\Rejoin\CreateRejoin\" />
+    <Folder Include="Infrastructure\" />
+    <Folder Include="Infrastructure\Notifications\" />
+    <Folder Include="Infrastructure\Persistence\" />
+    <Folder Include="Infrastructure\Persistence\Configurations\" />
+  </ItemGroup>
+
+</Project>

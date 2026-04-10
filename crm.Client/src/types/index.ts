@@ -1,0 +1,101 @@
+// ─── Shared ───
+export type SoftDeletable = {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+};
+
+// ─── Lead ───
+export type LeadStatus =
+  | 'New' | 'Contacted' | 'Consulted' | 'Qualified'
+  | 'Hot' | 'Warm' | 'Cold' | 'Lost' | 'Converted';
+
+export interface Lead extends SoftDeletable {
+  name: string;
+  phone: string;
+  status: LeadStatus;
+  source: string;
+  reason: string;
+}
+
+// ─── Follow-up ───
+export type FollowUpPriority = 'Low' | 'Medium' | 'High';
+export type FollowUpOutcome =
+  | 'None' | 'Busy' | 'Not Interested' | 'Callback Requested'
+  | 'Converted' | 'Wrong Number' | 'Disconnected';
+
+export interface FollowUp extends SoftDeletable {
+  leadId: string;
+  followUpDate: string;
+  contactMedium: string;
+  priority: FollowUpPriority;
+  notes: string;
+  completedAt: string | null;
+  outcome: FollowUpOutcome | null;
+  outcomeNotes: string;
+}
+
+// ─── Package ───
+export interface TreatmentPackage extends SoftDeletable {
+  name: string;
+  durationDays: number;
+  cost: number;
+}
+
+// ─── Medicine ───
+export interface Medicine extends SoftDeletable {
+  name: string;
+  price: number;
+  active: boolean;
+}
+
+// ─── Enrollment ───
+export interface Enrollment extends SoftDeletable {
+  leadId: string;
+  packageId: string;
+  packageName: string;
+  packageCost: number;
+  packageDuration: number;
+  startDate: string;
+  endDate: string;
+  amountPaid: number;
+  medicineItems: BillMedicineItem[];
+}
+
+// ─── Bill ───
+export interface BillMedicineItem {
+  medicineId: string;
+  medicineName: string;
+  quantity: number;
+  unitPriceAtSale: number;
+}
+
+export interface Bill extends SoftDeletable {
+  leadId: string;
+  enrollmentId: string | null;
+  rejoinId: string | null;
+  packageAmount: number;
+  amountPaid: number;
+  medicineItems: BillMedicineItem[];
+}
+
+// ─── Rejoin ───
+export interface Rejoin extends SoftDeletable {
+  leadId: string;
+  packageId: string;
+  packageName: string;
+  packageCost: number;
+  packageDuration: number;
+  startDate: string;
+  endDate: string;
+}
+
+// ─── Lookups ───
+export type LookupCategory = 'LeadSource' | 'LeadReason';
+
+export interface LookupValue extends SoftDeletable {
+  category: LookupCategory;
+  code: string;
+  displayName: string;
+}

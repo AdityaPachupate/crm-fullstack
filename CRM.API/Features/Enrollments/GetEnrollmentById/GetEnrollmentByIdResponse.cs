@@ -1,0 +1,23 @@
+namespace CRM.API.Features.Enrollments.GetEnrollmentById
+{
+    public record GetEnrollmentByIdResponse(
+        Guid Id,
+        Guid LeadId,
+        string LeadName,
+        Guid PackageId,
+        string PackageName,
+        DateOnly StartDate,
+        DateOnly EndDate,
+        decimal PackageCostSnapshot,
+        int PackageDurationSnapshot,
+        bool IsDeleted,
+        DateTime? DeletedAt,
+        DateTime CreatedAt,
+        
+        // Financial Summary from linked Bill
+        decimal InitialAmount,
+        decimal MedicineBillingAmount,
+        decimal AmountPaid,
+        decimal PendingAmount
+    );
+}
