@@ -105,6 +105,8 @@ builder.Services.AddProblemDetails();
 
 var app = builder.Build();
 
+app.UseCors();
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -120,7 +122,6 @@ else
     Log.Warning("Skipping Database Migration because connection string is null.");
 }
 
-app.UseCors();
 
 app.UseSerilogRequestLogging();
 app.UseMiddleware<CorrelationIdMiddleware>();
