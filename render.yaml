@@ -5,7 +5,7 @@ services:
     env: docker
     dockerContext: ./CRM.API
     dockerfilePath: Dockerfile.deploy
-    plan: starter
+    plan: free
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
         value: Production
