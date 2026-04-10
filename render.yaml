@@ -22,6 +22,8 @@ services:
     buildCommand: npm install && npm run build
     staticPublishPath: dist
     envVars:
+      - key: NODE_VERSION
+        value: 20
       - key: VITE_API_URL
         value: https://crm-api.onrender.com
     routes:
