@@ -100,6 +100,29 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [state]);
 
+  // Initial Sync from API
+  useEffect(() => {
+    fetch(LEADS_API_URL)
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.items) {
+          const apiLeads: Lead[] = data.items.map((item: any) => ({
+            id: item.id,
+            name: item.name,
+            phone: item.phone,
+            status: item.status,
+            source: item.source,
+            reason: item.reason,
+            createdAt: item.createdAt,
+            updatedAt: item.updatedAt ?? item.createdAt,
+            deletedAt: null,
+          }));
+          setState(s => ({ ...s, leads: apiLeads }));
+        }
+      })
+      .catch(err => console.error('Failed to sync leads from API:', err));
+  }, [LEADS_API_URL]);
+
   const update = useCallback(<K extends keyof CRMState>(key: K, fn: (arr: CRMState[K]) => CRMState[K]) => {
     setState(s => ({ ...s, [key]: fn(s[key]) }));
   }, []);

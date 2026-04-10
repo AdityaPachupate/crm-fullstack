@@ -17,7 +17,7 @@ import { Lead, LeadStatus } from '@/types';
 import { ChevronDown, Plus, Search } from 'lucide-react';
 
 const ALL_STATUSES: LeadStatus[] = ['New', 'Contacted', 'Consulted', 'Qualified', 'Hot', 'Warm', 'Cold', 'Lost', 'Converted'];
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://medicalcrm-api.onrender.com').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://crm-api-69x7.onrender.com').replace(/\/$/, '');
 const LEADS_API_URL = `${API_BASE_URL}/api/leads`;
 const QUICK_STATUS_STORAGE_KEY = 'leads_quick_status_buttons_v1';
 
