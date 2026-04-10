@@ -6,7 +6,6 @@ using CRM.API.Infrastructure.Notifications;
 using CRM.API.Infrastructure.Persistence;
 using FluentValidation;
 using CRM.API.Common.Behaviors;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 using Serilog;
@@ -14,7 +13,6 @@ using Serilog.Events;
 using CRM.API.Infrastructure.Persistence.Jobs;
 using CRM.API.Infrastructure.Persistence.Repositories;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using DotNetEnv;
 
 // Load .env from current directory or parent (monorepo root)
 if (System.IO.File.Exists(".env"))
@@ -77,7 +75,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<INotificationService, WhatsAppNotificationService>();
 builder.Services.AddScoped<IBillRepository, BillRepository>();
 
-builder.Services.AddMediatR(cfg => 
+builder.Services.AddMediatR(cfg =>
 {
     cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
     cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
@@ -113,7 +111,14 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-app.MigrateDatabase();
+if (!string.IsNullOrEmpty(connectionString))
+{
+    app.MigrateDatabase();
+}
+else
+{
+    Log.Warning("Skipping Database Migration because connection string is null.");
+}
 
 app.UseCors();
 
