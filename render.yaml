@@ -16,11 +16,12 @@ services:
           name: crm-db
 
   # React Frontend (Static Site)
-  - type: static
+  - type: web
     name: crm-client
+    runtime: static
     rootDir: crm.Client
     buildCommand: npm install && npm run build
-    publishDir: dist
+    staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
         value: https://crm-api.onrender.com
