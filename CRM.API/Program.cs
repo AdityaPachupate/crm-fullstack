@@ -57,10 +57,22 @@ builder.Services.AddCors(options =>
 
 // Add services to the container.
 var connectionString = builder.Configuration.GetConnectionString("NeonProductionDb")
-                      ?? Environment.GetEnvironmentVariable("ConnectionStrings__NeonProductionDb");
+                      ?? Environment.GetEnvironmentVariable("ConnectionStrings__NeonProductionDb")
+                      ?? Environment.GetEnvironmentVariable("DATABASE_URL")
+                      ?? Environment.GetEnvironmentVariable("NEON_URL");
+
+if (string.IsNullOrEmpty(connectionString))
+{
+    Log.Fatal("CRITICAL: Connection string 'NeonProductionDb' or 'DATABASE_URL' is missing! Check environment variables.");
+}
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(connectionString, o => o.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)));
+{
+    if (!string.IsNullOrEmpty(connectionString))
+    {
+        options.UseNpgsql(connectionString, o => o.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery));
+    }
+});
 
 builder.Services.AddScoped<INotificationService, WhatsAppNotificationService>();
 builder.Services.AddScoped<IBillRepository, BillRepository>();
@@ -75,8 +87,15 @@ builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
 
 builder.Host.UseSerilog();
 builder.Services.AddHostedService<TrashCleanupJob>();
-builder.Services.AddHealthChecks()
-    .AddNpgSql(connectionString!, name: "NeonDB", tags: new[] { "ready" });
+var healthChecks = builder.Services.AddHealthChecks();
+if (!string.IsNullOrEmpty(connectionString))
+{
+    healthChecks.AddNpgSql(connectionString, name: "NeonDB", tags: new[] { "ready" });
+}
+else
+{
+    Log.Warning("Skipping Database HealthCheck because connection string is null.");
+}
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
