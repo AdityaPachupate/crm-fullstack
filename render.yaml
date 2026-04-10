@@ -19,7 +19,7 @@ services:
     name: crm-client
     runtime: static
     rootDir: crm.Client
-    buildCommand: npm install && npm run build
+    buildCommand: rm -rf node_modules package-lock.json && npm install && npm run build
     staticPublishPath: dist
     envVars:
       - key: NODE_VERSION
