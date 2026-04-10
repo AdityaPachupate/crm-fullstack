@@ -9,7 +9,7 @@ import PageHeader from '@/components/layout/PageHeader';
 import { LeadStatus } from '@/types';
 import { toast } from 'sonner';
 
-const STATUSES: LeadStatus[] = ['New', 'Contacted', 'Consulted', 'Qualified', 'Hot', 'Warm', 'Cold', 'Lost', 'Converted'];
+const STATUSES: LeadStatus[] = ['New', 'Contacted', 'Consulted', 'Qualified', 'Lost', 'Converted', 'Hot', 'Cold', 'Warm'];
 
 export default function LeadForm({ editId }: { editId?: string }) {
   const { leads, lookups, addLead, updateLead } = useCRM();
@@ -37,16 +37,26 @@ export default function LeadForm({ editId }: { editId?: string }) {
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = () => {
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async () => {
     if (!validate()) return;
-    if (existing) {
-      updateLead(existing.id, { name: name.trim(), phone: phone.trim(), status, source, reason });
-      toast.success('Lead updated');
-    } else {
-      addLead({ name: name.trim(), phone: phone.trim(), status, source, reason });
-      toast.success('Lead created');
+    setSaving(true);
+    try {
+      if (existing) {
+        updateLead(existing.id, { name: name.trim(), phone: phone.trim(), status, source, reason });
+        toast.success('Lead updated');
+        navigate(-1);
+      } else {
+        await addLead({ name: name.trim(), phone: phone.trim(), status, source, reason });
+        toast.success('Lead created');
+        navigate(-1);
+      }
+    } catch (err) {
+      // Error is handled in context via toast
+    } finally {
+      setSaving(false);
     }
-    navigate(-1);
   };
 
   return (
@@ -88,8 +98,8 @@ export default function LeadForm({ editId }: { editId?: string }) {
         </div>
       </div>
       <div className="sticky bottom-0 border-t bg-card/95 backdrop-blur-sm p-4">
-        <Button className="w-full rounded-full h-11" onClick={handleSubmit}>
-          {existing ? 'Update Lead' : 'Save Lead'}
+        <Button className="w-full rounded-full h-11" onClick={handleSubmit} disabled={saving}>
+          {saving ? 'Saving...' : (existing ? 'Update Lead' : 'Save Lead')}
         </Button>
       </div>
     </div>

@@ -181,7 +181,13 @@ export default function LeadDetail() {
                       <item.icon className="h-4 w-4" />
                       {item.label}
                     </div>
-                    <span className="text-sm font-medium">{item.value}</span>
+                    {item.label === 'Phone' ? (
+                      <a href={`tel:${lead.phone}`} className="text-sm font-medium text-primary hover:underline">
+                        {item.value}
+                      </a>
+                    ) : (
+                      <span className="text-sm font-medium">{item.value}</span>
+                    )}
                   </div>
                 ))}
               </CardContent>

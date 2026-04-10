@@ -15,8 +15,9 @@ import StatusBadge from '@/components/shared/StatusBadge';
 import { maskPhone, relativeDate } from '@/lib/helpers';
 import { Lead, LeadStatus } from '@/types';
 import { ChevronDown, Plus, Search } from 'lucide-react';
+import { useCRM } from '@/context/CRMContext';
 
-const ALL_STATUSES: LeadStatus[] = ['New', 'Contacted', 'Consulted', 'Qualified', 'Hot', 'Warm', 'Cold', 'Lost', 'Converted'];
+const ALL_STATUSES: LeadStatus[] = ['New', 'Contacted', 'Consulted', 'Qualified', 'Lost', 'Converted', 'Hot', 'Cold', 'Warm'];
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://crm-api-69x7.onrender.com').replace(/\/$/, '');
 const LEADS_API_URL = `${API_BASE_URL}/api/leads`;
 const QUICK_STATUS_STORAGE_KEY = 'leads_quick_status_buttons_v1';
@@ -43,10 +44,7 @@ type LeadsApiResponse = {
 };
 
 export default function LeadsList() {
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const { leads, leadsCount, loading, error, refreshLeads } = useCRM();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<LeadStatus | 'All'>('All');
   const [quickStatuses, setQuickStatuses] = useState<LeadStatus[]>(() => {
@@ -65,51 +63,8 @@ export default function LeadsList() {
   }, [quickStatuses]);
 
   useEffect(() => {
-    const controller = new AbortController();
-    const fetchLeads = async () => {
-      try {
-        setLoading(true);
-        setError('');
-
-        const query = new URLSearchParams({
-          pageNumber: '1',
-          pageSize: '100',
-        });
-        if (statusFilter !== 'All') query.set('status', statusFilter);
-
-        const response = await fetch(`${LEADS_API_URL}?${query.toString()}`, {
-          signal: controller.signal,
-        });
-        if (!response.ok) {
-          throw new Error(`Failed to load leads (${response.status})`);
-        }
-
-        const data: LeadsApiResponse = await response.json();
-        setTotalCount(data.totalCount);
-        setLeads(
-          data.items.map((item) => ({
-            id: item.id,
-            name: item.name,
-            phone: item.phone,
-            status: item.status,
-            source: item.source,
-            reason: item.reason,
-            createdAt: item.createdAt,
-            updatedAt: item.updatedAt ?? item.createdAt,
-            deletedAt: null,
-          }))
-        );
-      } catch (err) {
-        if ((err as Error).name === 'AbortError') return;
-        setError((err as Error).message || 'Unable to fetch leads');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchLeads();
-    return () => controller.abort();
-  }, [statusFilter]);
+    refreshLeads({ status: statusFilter === 'All' ? undefined : statusFilter });
+  }, [statusFilter, refreshLeads]);
 
   const activeLeads = useMemo(() => {
     return leads
@@ -134,7 +89,7 @@ export default function LeadsList() {
       <div className="sticky top-0 z-40 space-y-3 border-b bg-card/95 backdrop-blur-sm px-5 py-4">
         <div className="flex items-center justify-between">
           <h1 className="text-base font-semibold tracking-tight">All Leads</h1>
-          <span className="text-xs text-muted-foreground">{totalCount}</span>
+          <span className="text-xs text-muted-foreground">{leadsCount}</span>
         </div>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -215,7 +170,9 @@ export default function LeadsList() {
                   <div className="flex items-center gap-2">
                     <p className="truncate text-sm font-medium">{lead.name}</p>
                   </div>
-                  <p className="text-xs text-muted-foreground">{maskPhone(lead.phone)}</p>
+                  <a href={`tel:${lead.phone}`} className="text-xs text-muted-foreground hover:text-primary transition-colors" onClick={(e) => e.stopPropagation()}>
+                    {maskPhone(lead.phone)}
+                  </a>
                 </div>
                 {/* Tags */}
                 <div className="flex items-center gap-3 shrink-0">

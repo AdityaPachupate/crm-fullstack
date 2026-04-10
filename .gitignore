@@ -168,3 +168,6 @@ logs/
 implementation_plan.md
 task.md
 walkthrough.md
+dev.ps1
+run.bat
+start.ps1

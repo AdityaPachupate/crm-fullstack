@@ -1,9 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Lead, LeadStatus, FollowUp, TreatmentPackage, Medicine, Enrollment, Bill, Rejoin, LookupValue } from '@/types';
 import { generateId, now } from '@/lib/helpers';
+import { toast } from 'sonner';
 
 interface CRMState {
   leads: Lead[];
+  leadsCount: number;
   followUps: FollowUp[];
   packages: TreatmentPackage[];
   medicines: Medicine[];
@@ -11,11 +13,13 @@ interface CRMState {
   bills: Bill[];
   rejoins: Rejoin[];
   lookups: LookupValue[];
+  loading: boolean;
+  error: string | null;
 }
 
 interface CRMContextType extends CRMState {
   // Leads
-  addLead: (l: Omit<Lead, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>) => Lead;
+  addLead: (l: Omit<Lead, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>) => Promise<Lead>;
   updateLead: (id: string, l: Partial<Lead>) => void;
   softDeleteLead: (id: string) => void;
   restoreLead: (id: string) => void;
@@ -57,9 +61,10 @@ interface CRMContextType extends CRMState {
   updateLookup: (id: string, l: Partial<LookupValue>) => void;
   softDeleteLookup: (id: string) => void;
   restoreLookup: (id: string) => void;
+  refreshLeads: (params?: { status?: string; search?: string }) => Promise<void>;
 }
 
-const ALL_STATUSES: LeadStatus[] = ['New', 'Contacted', 'Consulted', 'Qualified', 'Hot', 'Warm', 'Cold', 'Lost', 'Converted'];
+const ALL_STATUSES: LeadStatus[] = ['New', 'Contacted', 'Consulted', 'Qualified', 'Lost', 'Converted', 'Hot', 'Cold', 'Warm'];
 const STORAGE_KEY = 'clinic_crm_data';
 
 const defaultLookups: Omit<LookupValue, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>[] = [
@@ -81,6 +86,7 @@ function loadState(): CRMState {
   const ts = now();
   return {
     leads: [],
+    leadsCount: 0,
     followUps: [],
     packages: [],
     medicines: [],
@@ -88,6 +94,8 @@ function loadState(): CRMState {
     bills: [],
     rejoins: [],
     lookups: defaultLookups.map(l => ({ ...l, id: generateId(), createdAt: ts, updatedAt: ts, deletedAt: null })),
+    loading: false,
+    error: null,
   };
 }
 
@@ -100,8 +108,13 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [state]);
 
+  const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://medicalcrm-api.onrender.com').replace(/\/$/, '');
+  const LEADS_API_URL = `${API_BASE_URL}/api/leads`;
+  const LOOKUPS_API_URL = `${API_BASE_URL}/api/lookups`;
+
   // Initial Sync from API
   useEffect(() => {
+    // Sync Leads
     fetch(LEADS_API_URL)
       .then(res => res.json())
       .then(data => {
@@ -110,7 +123,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
             id: item.id,
             name: item.name,
             phone: item.phone,
-            status: item.status,
+            status: ALL_STATUSES[item.status] || 'New',
             source: item.source,
             reason: item.reason,
             createdAt: item.createdAt,
@@ -121,60 +134,127 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
         }
       })
       .catch(err => console.error('Failed to sync leads from API:', err));
-  }, [LEADS_API_URL]);
+
+    // Sync Lookups
+    fetch(`${LOOKUPS_API_URL}?pageSize=200`)
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.items) {
+          const apiLookups: LookupValue[] = data.items.map((item: any) => ({
+            id: item.id,
+            category: item.category,
+            code: item.code,
+            displayName: item.displayName,
+            createdAt: item.createdAt,
+            updatedAt: item.updatedAt ?? item.createdAt,
+            deletedAt: item.deletedAt,
+          }));
+          setState(s => ({ ...s, lookups: apiLookups }));
+        }
+      })
+      .catch(err => console.error('Failed to sync lookups from API:', err));
+  }, [LEADS_API_URL, LOOKUPS_API_URL]);
 
   const update = useCallback(<K extends keyof CRMState>(key: K, fn: (arr: CRMState[K]) => CRMState[K]) => {
     setState(s => ({ ...s, [key]: fn(s[key]) }));
   }, []);
 
-  // Generic helpers
-  const softDelete = <K extends keyof CRMState>(key: K, id: string) =>
-    update(key, arr => arr.map((item: any) => item.id === id ? { ...item, deletedAt: now(), updatedAt: now() } : item) as CRMState[K]);
-  const restore = <K extends keyof CRMState>(key: K, id: string) =>
-    update(key, arr => arr.map((item: any) => item.id === id ? { ...item, deletedAt: null, updatedAt: now() } : item) as CRMState[K]);
-  const hardDelete = <K extends keyof CRMState>(key: K, id: string) =>
-    update(key, arr => arr.filter((item: any) => item.id !== id) as CRMState[K]);
+  const refreshLeads = useCallback(async (params?: { status?: string; search?: string }) => {
+    try {
+      setState(s => ({ ...s, loading: true, error: null }));
+      const query = new URLSearchParams();
+      if (params?.status) query.set('status', params.status);
+      if (params?.search) query.set('search', params.search);
+      query.set('pageSize', '100');
 
-  const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://medicalcrm-api.onrender.com').replace(/\/$/, '');
-  const LEADS_API_URL = `${API_BASE_URL}/api/leads`;
+      const res = await fetch(`${LEADS_API_URL}?${query.toString()}`);
+      if (!res.ok) throw new Error('Failed to fetch leads');
+      const data = await res.json();
+      
+      if (data && data.items) {
+        const apiLeads: Lead[] = data.items.map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          phone: item.phone,
+          status: ALL_STATUSES[item.status] || 'New',
+          source: item.source,
+          reason: item.reason,
+          createdAt: item.createdAt,
+          updatedAt: item.updatedAt ?? item.createdAt,
+          deletedAt: null,
+        }));
+        setState(s => ({ ...s, leads: apiLeads, leadsCount: data.totalCount, loading: false }));
+      }
+    } catch (err) {
+      setState(s => ({ ...s, error: (err as Error).message, loading: false }));
+    }
+  }, [LEADS_API_URL]);
+
+  // Generic helpers
+  // Generic helpers for array-based state
+  type ArrayStateKeys = 'leads' | 'followUps' | 'packages' | 'medicines' | 'enrollments' | 'bills' | 'rejoins' | 'lookups';
+
+  const softDelete = <K extends ArrayStateKeys>(key: K, id: string) =>
+    update(key, arr => (arr as any[]).map((item: any) => item.id === id ? { ...item, deletedAt: now(), updatedAt: now() } : item) as CRMState[K]);
+  
+  const restore = <K extends ArrayStateKeys>(key: K, id: string) =>
+    update(key, arr => (arr as any[]).map((item: any) => item.id === id ? { ...item, deletedAt: null, updatedAt: now() } : item) as CRMState[K]);
+  
+  const hardDelete = <K extends ArrayStateKeys>(key: K, id: string) =>
+    update(key, arr => (arr as any[]).filter((item: any) => item.id !== id) as CRMState[K]);
+
 
   const ctx: CRMContextType = {
     ...state,
-    addLead: (l) => {
-      // Create local temporary lead for immediate UI feedback
+    addLead: async (l) => {
       const tempId = generateId();
       const lead: Lead = { ...l, id: tempId, createdAt: now(), updatedAt: now(), deletedAt: null };
       update('leads', arr => [...arr, lead]);
 
-      // Perform background API call
-      fetch(LEADS_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: l.name,
-          phone: l.phone,
-          status: ALL_STATUSES.indexOf(l.status), // Backend expects int
-          source: l.source,
-          reason: l.reason
-        })
-      })
-      .then(async res => {
-        if (!res.ok) throw new Error('API Error');
+      try {
+        const res = await fetch(LEADS_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: l.name,
+            phone: l.phone,
+            status: ALL_STATUSES.indexOf(l.status),
+            source: l.source,
+            reason: l.reason
+          })
+        });
+
+        if (res.status === 409) {
+          // Rollback
+          update('leads', arr => arr.filter(x => x.id !== tempId));
+          toast.error('This phone number is already registered to another lead');
+          throw new Error('Conflict');
+        }
+
+        if (!res.ok) {
+          // Rollback
+          update('leads', arr => arr.filter(x => x.id !== tempId));
+          toast.error('Failed to create lead');
+          throw new Error('API Error');
+        }
+
         const savedLead = await res.json();
-        // Update the temp lead with the real ID and data from server
         update('leads', arr => arr.map(x => x.id === tempId ? {
           ...x,
           id: savedLead.id,
           createdAt: savedLead.createdAt,
           updatedAt: savedLead.createdAt
         } : x));
-      })
-      .catch(err => {
-        console.error('Failed to save lead to API:', err);
-        // We might want to notify the user or handle rollback here
-      });
-
-      return lead;
+        
+        return { ...lead, id: savedLead.id, createdAt: savedLead.createdAt };
+      } catch (err) {
+        // Already handled rollback in res.status blocks, but for network errors:
+        if ((err as Error).message !== 'Conflict' && (err as Error).message !== 'API Error') {
+          update('leads', arr => arr.filter(x => x.id !== tempId));
+          toast.error('Network error. Lead not saved.');
+        }
+        throw err;
+      }
     },
     updateLead: (id, l) => {
       update('leads', arr => arr.map(x => x.id === id ? { ...x, ...l, updatedAt: now() } : x));
@@ -270,6 +350,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     updateLookup: (id, l) => update('lookups', arr => arr.map(x => x.id === id ? { ...x, ...l, updatedAt: now() } : x)),
     softDeleteLookup: (id) => softDelete('lookups', id),
     restoreLookup: (id) => restore('lookups', id),
+    refreshLeads,
   };
 
   return <CRMContext.Provider value={ctx}>{children}</CRMContext.Provider>;

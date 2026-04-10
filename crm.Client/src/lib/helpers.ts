@@ -9,8 +9,7 @@ export function now(): string {
 }
 
 export function maskPhone(phone: string): string {
-  if (phone.length <= 4) return phone;
-  return '****' + phone.slice(-4);
+  return phone;
 }
 
 export function relativeDate(dateStr: string): string {

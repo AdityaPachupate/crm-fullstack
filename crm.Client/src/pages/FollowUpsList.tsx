@@ -82,7 +82,15 @@ export default function FollowUpsList() {
               <span className={`h-2 w-2 shrink-0 rounded-full ${f.priority === 'High' ? 'bg-priority-high' : f.priority === 'Medium' ? 'bg-priority-medium' : 'bg-priority-low'}`} />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{lead?.name || 'Unknown'}</p>
-                <p className="text-xs text-muted-foreground">{lead ? maskPhone(lead.phone) : ''}</p>
+                {lead ? (
+                  <a 
+                    href={`tel:${lead.phone}`} 
+                    className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {maskPhone(lead.phone)}
+                  </a>
+                ) : null}
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 {overdue && <span className="text-[10px] font-medium text-destructive bg-destructive/10 px-2 py-0.5 rounded-full">Overdue</span>}
