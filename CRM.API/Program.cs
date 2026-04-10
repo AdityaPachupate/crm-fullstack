@@ -15,7 +15,16 @@ using CRM.API.Infrastructure.Persistence.Jobs;
 using CRM.API.Infrastructure.Persistence.Repositories;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
-DotNetEnv.Env.Load();
+// Load .env from current directory or parent (monorepo root)
+if (System.IO.File.Exists(".env"))
+{
+    DotNetEnv.Env.Load();
+}
+else if (System.IO.File.Exists("../.env"))
+{
+    DotNetEnv.Env.Load("../.env");
+}
+
 
 var builder = WebApplication.CreateBuilder(args);
 

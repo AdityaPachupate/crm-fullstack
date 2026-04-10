@@ -7,9 +7,10 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
+    env_file:
+      - .env # Load root .env
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__NeonProductionDb=${DATABASE_URL}
     volumes:
       - ./CRM.API/logs:/app/logs
 
@@ -21,5 +22,5 @@ services:
       - "80:80"
     depends_on:
       - api
-    environment:
-      - VITE_API_URL=http://localhost:8080
+    env_file:
+      - .env # Load root .env
