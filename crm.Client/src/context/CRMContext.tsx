@@ -108,7 +108,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [state]);
 
-  const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://medicalcrm-api.onrender.com').replace(/\/$/, '');
+  const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://crm-api-1ugj.onrender.com').replace(/\/$/, '');
   const LEADS_API_URL = `${API_BASE_URL}/api/leads`;
   const LOOKUPS_API_URL = `${API_BASE_URL}/api/lookups`;
 
