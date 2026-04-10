@@ -1,16 +1,46 @@
 version: '3.8'
 
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: crm_db
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  adminer:
+    image: adminer
+    container_name: crm_adminer
+    restart: always
+    ports:
+      - "8888:8080"
+    depends_on:
+      - db
+
   api:
     build:
       context: ./CRM.API
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
     env_file:
       - .env # Load root .env
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__NeonProductionDb=${ConnectionStrings__LocalDb}
     volumes:
       - ./CRM.API/logs:/app/logs
 
@@ -24,3 +54,6 @@ services:
       - api
     env_file:
       - .env # Load root .env
+
+volumes:
+  postgres_data:
