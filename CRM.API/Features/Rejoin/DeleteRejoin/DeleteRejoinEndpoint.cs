@@ -11,7 +11,7 @@ public class DeleteRejoinEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapDelete("/api/rejoins/{id}", async (Guid id, [FromQuery] bool isPermanent = false, IMediator mediator, CancellationToken cancellationToken) =>
+        app.MapDelete("/api/rejoins/{id}", async (Guid id, IMediator mediator, CancellationToken cancellationToken, [FromQuery] bool isPermanent = false) =>
         {
             var request = new DeleteRejoinRequest(id, isPermanent);
             var result = await mediator.Send(new DeleteRejoinCommand(request), cancellationToken);

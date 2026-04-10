@@ -14,6 +14,7 @@ using Serilog.Events;
 using CRM.API.Infrastructure.Persistence.Jobs;
 using CRM.API.Infrastructure.Persistence.Repositories;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using DotNetEnv;
 
 // Load .env from current directory or parent (monorepo root)
 if (System.IO.File.Exists(".env"))
