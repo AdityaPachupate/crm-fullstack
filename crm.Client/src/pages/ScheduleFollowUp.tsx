@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useCRM } from '@/context/CRMContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -12,13 +11,15 @@ import { FollowUpPriority } from '@/types';
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+import { useLead } from '@/hooks/useLeads';
+import { useCreateFollowUp } from '@/hooks/useFollowUps';
 
 export default function ScheduleFollowUp() {
   const { leadId } = useParams<{ leadId: string }>();
-  const { leads, addFollowUp } = useCRM();
   const navigate = useNavigate();
-  const lead = leads.find(l => l.id === leadId);
+  
+  const { data: lead, isLoading: loadingLead } = useLead(leadId || '');
+  const createMutation = useCreateFollowUp();
 
   const [date, setDate] = useState<Date | undefined>();
   const [contactMedium, setContactMedium] = useState('');
@@ -34,19 +35,21 @@ export default function ScheduleFollowUp() {
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validate() || !leadId) return;
-    addFollowUp({
+    
+    await createMutation.mutateAsync({
       leadId,
       followUpDate: date!.toISOString().split('T')[0],
-      contactMedium: contactMedium.trim(),
+      source: contactMedium.trim(), // API calls it 'Source'
       priority,
       notes: notes.trim(),
     });
-    toast.success('Follow-up scheduled');
+
     navigate(-1);
   };
 
+  if (leadId && loadingLead) return <div className="p-8 text-center text-muted-foreground">Loading lead...</div>;
   if (!lead) return <div className="p-8 text-center text-muted-foreground">Lead not found</div>;
 
   return (
@@ -87,7 +90,13 @@ export default function ScheduleFollowUp() {
         </div>
       </div>
       <div className="sticky bottom-0 border-t bg-card/95 backdrop-blur-sm p-4">
-        <Button className="w-full rounded-full h-11" onClick={handleSubmit}>Schedule</Button>
+        <Button 
+          className="w-full rounded-full h-11" 
+          onClick={handleSubmit} 
+          disabled={createMutation.isPending}
+        >
+          {createMutation.isPending ? 'Scheduling...' : 'Schedule'}
+        </Button>
       </div>
     </div>
   );

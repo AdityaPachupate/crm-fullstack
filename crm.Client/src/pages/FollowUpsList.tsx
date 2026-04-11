@@ -1,5 +1,4 @@
 import { useState, useMemo } from 'react';
-import { useCRM } from '@/context/CRMContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import PriorityBadge from '@/components/shared/PriorityBadge';
@@ -13,13 +12,19 @@ import { CalendarIcon, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { FollowUp, FollowUpOutcome, FollowUpPriority } from '@/types';
-import { toast } from 'sonner';
+import { useLeads } from '@/hooks/useLeads';
+import { useCompleteFollowUp, useFollowUpsToday } from '@/hooks/useFollowUps';
+import { ALL_STATUSES } from '@/constants';
 
 const OUTCOMES: FollowUpOutcome[] = ['None', 'Busy', 'Not Interested', 'Callback Requested', 'Converted', 'Wrong Number', 'Disconnected'];
 const NEGATIVE_OUTCOMES: FollowUpOutcome[] = ['Not Interested', 'Wrong Number', 'Disconnected'];
 
 export default function FollowUpsList() {
-  const { followUps, leads, completeFollowUp } = useCRM();
+  const { data: followUps = [], isLoading: loading } = useFollowUpsToday();
+  const { data: leadsData } = useLeads();
+  const leads = leadsData?.items || [];
+  const completeMutation = useCompleteFollowUp();
+
   const [selected, setSelected] = useState<FollowUp | null>(null);
   const [outcome, setOutcome] = useState<FollowUpOutcome>('None');
   const [notes, setNotes] = useState('');
@@ -27,14 +32,15 @@ export default function FollowUpsList() {
   const [nextPriority, setNextPriority] = useState<FollowUpPriority>('Medium');
 
   const items = useMemo(() => {
-    return followUps
-      .filter(f => !f.deletedAt && !f.completedAt && (isToday(f.followUpDate) || isPast(f.followUpDate)))
+    return (followUps as any[])
+      .filter(f => !f.deletedAt && !f.completedAt)
       .sort((a, b) => {
         const aO = isPast(a.followUpDate) && !isToday(a.followUpDate) ? 1 : 0;
         const bO = isPast(b.followUpDate) && !isToday(b.followUpDate) ? 1 : 0;
         if (bO !== aO) return bO - aO;
         const pm = { High: 3, Medium: 2, Low: 1 };
-        if (pm[b.priority] !== pm[a.priority]) return pm[b.priority] - pm[a.priority];
+        if (pm[b.priority as FollowUpPriority] !== pm[a.priority as FollowUpPriority]) 
+          return pm[b.priority as FollowUpPriority] - pm[a.priority as FollowUpPriority];
         return new Date(a.followUpDate).getTime() - new Date(b.followUpDate).getTime();
       });
   }, [followUps]);
@@ -47,17 +53,23 @@ export default function FollowUpsList() {
     setNextPriority('Medium');
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     if (!selected) return;
-    const next = nextDate ? {
-      leadId: selected.leadId,
-      followUpDate: nextDate.toISOString().split('T')[0],
-      priority: nextPriority,
-      contactMedium: selected.contactMedium,
-      notes: '',
-    } : undefined;
-    completeFollowUp(selected.id, outcome, notes, next);
-    toast.success('Follow-up completed');
+    
+    const isNegative = NEGATIVE_OUTCOMES.includes(outcome);
+    
+    await completeMutation.mutateAsync({
+      id: selected.id,
+      request: {
+        followUpId: selected.id,
+        outcome,
+        notes,
+        newLeadStatus: isNegative ? 'Lost' : undefined,
+        nextFollowUpDate: nextDate ? nextDate.toISOString().split('T')[0] : undefined,
+        nextFollowUpPriority: nextDate ? nextPriority : undefined,
+      }
+    });
+
     setSelected(null);
   };
 
@@ -69,7 +81,8 @@ export default function FollowUpsList() {
       </div>
 
       <div className="divide-y">
-        {items.length === 0 && <p className="py-16 text-center text-sm text-muted-foreground">All caught up! 🎉</p>}
+        {loading && <p className="py-16 text-center text-sm text-muted-foreground">Loading follow-ups...</p>}
+        {!loading && items.length === 0 && <p className="py-16 text-center text-sm text-muted-foreground">All caught up! 🎉</p>}
         {items.map(f => {
           const lead = leads.find(l => l.id === f.leadId);
           const overdue = isPast(f.followUpDate) && !isToday(f.followUpDate);

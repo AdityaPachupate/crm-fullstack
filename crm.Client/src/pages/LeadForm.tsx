@@ -1,6 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCRM } from '@/context/CRMContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -8,23 +7,38 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import PageHeader from '@/components/layout/PageHeader';
 import { LeadStatus } from '@/types';
 import { toast } from 'sonner';
+import { useCreateLead, useLead, useUpdateLead } from '@/hooks/useLeads';
+import { useLookups } from '@/hooks/useLookups';
 
-const STATUSES: LeadStatus[] = ['New', 'Contacted', 'Consulted', 'Qualified', 'Lost', 'Converted', 'Hot', 'Cold', 'Warm'];
+import { ALL_STATUSES, LOOKUP_CATEGORIES } from '@/constants';
 
 export default function LeadForm({ editId }: { editId?: string }) {
-  const { leads, lookups, addLead, updateLead } = useCRM();
   const navigate = useNavigate();
-  const existing = editId ? leads.find(l => l.id === editId) : null;
+  const { data: existingLead, isLoading: loadingLead } = useLead(editId || '');
+  const { data: lookups = [] } = useLookups();
+  
+  const createMutation = useCreateLead();
+  const updateMutation = useUpdateLead();
 
-  const sources = lookups.filter(l => l.category === 'LeadSource' && !l.deletedAt);
-  const reasons = lookups.filter(l => l.category === 'LeadReason' && !l.deletedAt);
+  const sources = lookups.filter(l => l.category === LOOKUP_CATEGORIES.LEAD_SOURCE && !l.deletedAt);
+  const reasons = lookups.filter(l => l.category === LOOKUP_CATEGORIES.LEAD_REASON && !l.deletedAt);
 
-  const [name, setName] = useState(existing?.name || '');
-  const [phone, setPhone] = useState(existing?.phone || '');
-  const [status, setStatus] = useState<LeadStatus>(existing?.status || 'New');
-  const [source, setSource] = useState(existing?.source || '');
-  const [reason, setReason] = useState(existing?.reason || '');
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [status, setStatus] = useState<LeadStatus>('New');
+  const [source, setSource] = useState('');
+  const [reason, setReason] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (existingLead) {
+      setName(existingLead.name);
+      setPhone(existingLead.phone);
+      setStatus(existingLead.status);
+      setSource(existingLead.source);
+      setReason(existingLead.reason);
+    }
+  }, [existingLead]);
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -37,31 +51,31 @@ export default function LeadForm({ editId }: { editId?: string }) {
     return Object.keys(e).length === 0;
   };
 
-  const [saving, setSaving] = useState(false);
+  const saving = createMutation.isPending || updateMutation.isPending;
 
   const handleSubmit = async () => {
     if (!validate()) return;
-    setSaving(true);
+    
+    const leadData = { name: name.trim(), phone: phone.trim(), status, source, reason };
+
     try {
-      if (existing) {
-        updateLead(existing.id, { name: name.trim(), phone: phone.trim(), status, source, reason });
-        toast.success('Lead updated');
+      if (editId) {
+        await updateMutation.mutateAsync({ id: editId, lead: leadData });
         navigate(-1);
       } else {
-        await addLead({ name: name.trim(), phone: phone.trim(), status, source, reason });
-        toast.success('Lead created');
+        await createMutation.mutateAsync(leadData);
         navigate(-1);
       }
     } catch (err) {
-      // Error is handled in context via toast
-    } finally {
-      setSaving(false);
+      // Mutation hooks handle error notifications via toast
     }
   };
 
+  if (editId && loadingLead) return <div className="p-8 text-center text-muted-foreground">Loading lead...</div>;
+
   return (
     <div className="flex flex-col">
-      <PageHeader title={existing ? 'Edit Lead' : 'New Lead'} back />
+      <PageHeader title={editId ? 'Edit Lead' : 'New Lead'} back />
       <div className="space-y-5 p-5">
         <div>
           <Label className="text-xs font-medium text-muted-foreground">Full Name</Label>
@@ -77,7 +91,7 @@ export default function LeadForm({ editId }: { editId?: string }) {
           <Label className="text-xs font-medium text-muted-foreground">Status</Label>
           <Select value={status} onValueChange={v => setStatus(v as LeadStatus)}>
             <SelectTrigger className="mt-1.5 h-10 rounded-lg"><SelectValue /></SelectTrigger>
-            <SelectContent>{STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+            <SelectContent>{ALL_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
           </Select>
         </div>
         <div>
@@ -99,7 +113,7 @@ export default function LeadForm({ editId }: { editId?: string }) {
       </div>
       <div className="sticky bottom-0 border-t bg-card/95 backdrop-blur-sm p-4">
         <Button className="w-full rounded-full h-11" onClick={handleSubmit} disabled={saving}>
-          {saving ? 'Saving...' : (existing ? 'Update Lead' : 'Save Lead')}
+          {saving ? 'Saving...' : (editId ? 'Update Lead' : 'Save Lead')}
         </Button>
       </div>
     </div>

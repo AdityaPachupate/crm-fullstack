@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,98 +8,15 @@ import PriorityBadge from '@/components/shared/PriorityBadge';
 import PageHeader from '@/components/layout/PageHeader';
 import { maskPhone, relativeDate, formatCurrency, todayStr } from '@/lib/helpers';
 import { Edit, CheckCircle, Pill, Phone, Globe, FileText, Calendar } from 'lucide-react';
-import { LeadStatus } from '@/types';
+import { useLead } from '@/hooks/useLeads';
+import { BillDto, FollowUpDto, EnrollmentDto, RejoinRecordDto, LeadDetail as LeadDetailType } from '@/types';
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://medicalcrm-api.onrender.com').replace(/\/$/, '');
-const LEADS_API_URL = `${API_BASE_URL}/api/leads`;
 
-type FollowUpDto = {
-  id: string;
-  followUpDate: string;
-  notes: string;
-  source: string;
-  priority: 'Low' | 'Medium' | 'High';
-  status: string;
-  createdAt: string;
-  completedAt: string | null;
-};
-
-type BillDto = {
-  id: string;
-  packageAmount: number;
-  advanceAmount: number;
-  pendingAmount: number;
-  medicineBillingAmount: number;
-  createdAt: string;
-};
-
-type EnrollmentDto = {
-  id: string;
-  packageId: string;
-  packageName: string;
-  packageCostSnapshot: number;
-  packageDurationSnapshot: number;
-  startDate: string;
-  endDate: string;
-  createdAt: string;
-  bill: BillDto | null;
-};
-
-type RejoinRecordDto = {
-  id: string;
-  packageId: string;
-  packageName: string;
-  packageCostSnapshot: number;
-  packageDurationSnapshot: number;
-  startDate: string;
-  endDate: string;
-  createdAt: string;
-  bill: BillDto | null;
-};
-
-type LeadDetailResponse = {
-  id: string;
-  name: string;
-  phone: string;
-  status: LeadStatus;
-  source: string;
-  reason: string;
-  createdAt: string;
-  updatedAt: string | null;
-  followUps: FollowUpDto[];
-  enrollments: EnrollmentDto[];
-  rejoinRecords: RejoinRecordDto[];
-};
 
 export default function LeadDetail() {
   const { id } = useParams<{ id: string }>();
-  const [lead, setLead] = useState<LeadDetailResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const { data: lead, isLoading: loading, error } = useLead(id || '');
   const [activeTab, setActiveTab] = useState('overview');
-
-  useEffect(() => {
-    if (!id) return;
-    const controller = new AbortController();
-    const fetchLeadById = async () => {
-      try {
-        setLoading(true);
-        setError('');
-        const response = await fetch(`${LEADS_API_URL}/${id}`, { signal: controller.signal });
-        if (!response.ok) throw new Error(`Failed to load lead (${response.status})`);
-        const data: LeadDetailResponse = await response.json();
-        setLead(data);
-      } catch (err) {
-        if ((err as Error).name === 'AbortError') return;
-        setError((err as Error).message || 'Unable to fetch lead details');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchLeadById();
-    return () => controller.abort();
-  }, [id]);
 
   const leadFollowUps = useMemo(
     () => (lead?.followUps ?? []).slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
@@ -118,7 +35,7 @@ export default function LeadDetail() {
   );
 
   if (loading) return <div className="p-8 text-center text-muted-foreground">Loading lead...</div>;
-  if (error) return <div className="p-8 text-center text-destructive">{error}</div>;
+  if (error) return <div className="p-8 text-center text-destructive">{(error as Error).message}</div>;
   if (!lead) return <div className="p-8 text-center text-muted-foreground">Lead not found</div>;
 
   const hasEnrollment = leadEnrollments.some(e => e.startDate <= todayStr() && e.endDate >= todayStr());

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,14 +13,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import StatusBadge from '@/components/shared/StatusBadge';
 import { maskPhone, relativeDate } from '@/lib/helpers';
-import { Lead, LeadStatus } from '@/types';
+import { LeadStatus } from '@/types';
 import { ChevronDown, Plus, Search } from 'lucide-react';
-import { useCRM } from '@/context/CRMContext';
+import { useLeads } from '@/hooks/useLeads';
+import { useLeadsStore } from '@/store/useLeadsStore';
+import { usePrefetch } from '@/hooks/usePrefetch';
 
-const ALL_STATUSES: LeadStatus[] = ['New', 'Contacted', 'Consulted', 'Qualified', 'Lost', 'Converted', 'Hot', 'Cold', 'Warm'];
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://crm-api-1ugj.onrender.com').replace(/\/$/, '');
-const LEADS_API_URL = `${API_BASE_URL}/api/leads`;
-const QUICK_STATUS_STORAGE_KEY = 'leads_quick_status_buttons_v1';
+import { ALL_STATUSES, APP_CONFIG } from '@/constants';
 
 type LeadsApiItem = {
   id: string;
@@ -44,12 +43,17 @@ type LeadsApiResponse = {
 };
 
 export default function LeadsList() {
-  const { leads, leadsCount, loading, error, refreshLeads } = useCRM();
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<LeadStatus | 'All'>('All');
+  const navigate = useNavigate();
+  const { search, setSearch, statusFilter, setStatusFilter } = useLeadsStore();
+  const { data, isLoading: loading, error } = useLeads({ status: statusFilter, search });
+  const { prefetchLead } = usePrefetch();
+  
+  const leads = data?.items || [];
+  const leadsCount = data?.totalCount || 0;
+
   const [quickStatuses, setQuickStatuses] = useState<LeadStatus[]>(() => {
     try {
-      const raw = localStorage.getItem(QUICK_STATUS_STORAGE_KEY);
+      const raw = localStorage.getItem(APP_CONFIG.QUICK_STATUS_STORAGE_KEY);
       if (!raw) return ALL_STATUSES.slice(0, 5);
       const parsed = JSON.parse(raw) as string[];
       return ALL_STATUSES.filter((status) => parsed.includes(status));
@@ -59,19 +63,8 @@ export default function LeadsList() {
   });
 
   useEffect(() => {
-    localStorage.setItem(QUICK_STATUS_STORAGE_KEY, JSON.stringify(quickStatuses));
+    localStorage.setItem(APP_CONFIG.QUICK_STATUS_STORAGE_KEY, JSON.stringify(quickStatuses));
   }, [quickStatuses]);
-
-  useEffect(() => {
-    refreshLeads({ status: statusFilter === 'All' ? undefined : statusFilter });
-  }, [statusFilter, refreshLeads]);
-
-  const activeLeads = useMemo(() => {
-    return leads
-      .filter(l => !l.deletedAt)
-      .filter(l => !search || l.name.toLowerCase().includes(search.toLowerCase()) || l.phone.includes(search))
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [leads, search]);
 
   const toggleQuickStatus = (status: LeadStatus, checked: boolean) => {
     setQuickStatuses((current) => {
@@ -154,12 +147,17 @@ export default function LeadsList() {
         {loading ? (
           <p className="py-16 text-center text-sm text-muted-foreground">Loading leads...</p>
         ) : error ? (
-          <p className="py-16 text-center text-sm text-destructive">{error}</p>
-        ) : activeLeads.length === 0 ? (
+          <p className="py-16 text-center text-sm text-destructive">{(error as Error).message}</p>
+        ) : leads.length === 0 ? (
           <p className="py-16 text-center text-sm text-muted-foreground">No leads found</p>
         ) : (
-          activeLeads.map(lead => (
-            <Link key={lead.id} to={`/leads/${lead.id}`} className="block">
+          leads.map(lead => (
+            <Link 
+              key={lead.id} 
+              to={`/leads/${lead.id}`} 
+              className="block"
+              onMouseEnter={() => prefetchLead(lead.id)}
+            >
               <div className="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm transition-colors hover:bg-muted/30">
                 {/* Avatar */}
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">
@@ -180,7 +178,7 @@ export default function LeadsList() {
                   <span className="text-[11px] text-muted-foreground hidden sm:inline">{relativeDate(lead.createdAt)}</span>
                 </div>
               </div>
-            </Link>
+            </div>
           ))
         )}
       </div>

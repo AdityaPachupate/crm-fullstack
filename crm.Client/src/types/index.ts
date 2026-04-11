@@ -99,3 +99,70 @@ export interface LookupValue extends SoftDeletable {
   code: string;
   displayName: string;
 }
+
+// ─── API DTOs ───
+
+export interface FollowUpDto {
+  id: string;
+  followUpDate: string;
+  notes: string;
+  source: string;
+  priority: 'Low' | 'Medium' | 'High';
+  status: string;
+  createdAt: string;
+  completedAt: string | null;
+}
+
+export interface BillDto {
+  id: string;
+  packageAmount: number;
+  advanceAmount: number;
+  pendingAmount: number;
+  medicineBillingAmount: number;
+  createdAt: string;
+}
+
+export interface EnrollmentDto {
+  id: string;
+  packageId: string;
+  packageName: string;
+  packageCostSnapshot: number;
+  packageDurationSnapshot: number;
+  startDate: string;
+  endDate: string;
+  createdAt: string;
+  bill: BillDto | null;
+}
+
+export interface RejoinRecordDto {
+  id: string;
+  packageId: string;
+  packageName: string;
+  packageCostSnapshot: number;
+  packageDurationSnapshot: number;
+  startDate: string;
+  endDate: string;
+  createdAt: string;
+  bill: BillDto | null;
+}
+
+export interface LeadDetail extends Lead {
+  followUps: FollowUpDto[];
+  enrollments: EnrollmentDto[];
+  rejoinRecords: RejoinRecordDto[];
+}
+
+export interface LeadsParams {
+  status?: string;
+  search?: string;
+  pageSize?: number;
+  pageNumber?: number;
+}
+
+export interface LeadsResponse {
+  items: Lead[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
+  totalPages: number;
+}

@@ -64,23 +64,22 @@ interface CRMContextType extends CRMState {
   refreshLeads: (params?: { status?: string; search?: string }) => Promise<void>;
 }
 
-const ALL_STATUSES: LeadStatus[] = ['New', 'Contacted', 'Consulted', 'Qualified', 'Lost', 'Converted', 'Hot', 'Cold', 'Warm'];
-const STORAGE_KEY = 'clinic_crm_data';
+import { ALL_STATUSES, APP_CONFIG, LOOKUP_CATEGORIES } from '@/constants';
 
 const defaultLookups: Omit<LookupValue, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>[] = [
-  { category: 'LeadSource', code: 'walk_in', displayName: 'Walk-in' },
-  { category: 'LeadSource', code: 'referral', displayName: 'Referral' },
-  { category: 'LeadSource', code: 'online', displayName: 'Online' },
-  { category: 'LeadSource', code: 'phone', displayName: 'Phone Inquiry' },
-  { category: 'LeadReason', code: 'back_pain', displayName: 'Back Pain' },
-  { category: 'LeadReason', code: 'weight_loss', displayName: 'Weight Loss' },
-  { category: 'LeadReason', code: 'skin_care', displayName: 'Skin Care' },
-  { category: 'LeadReason', code: 'general', displayName: 'General Wellness' },
+  { category: LOOKUP_CATEGORIES.LEAD_SOURCE, code: 'walk_in', displayName: 'Walk-in' },
+  { category: LOOKUP_CATEGORIES.LEAD_SOURCE, code: 'referral', displayName: 'Referral' },
+  { category: LOOKUP_CATEGORIES.LEAD_SOURCE, code: 'online', displayName: 'Online' },
+  { category: LOOKUP_CATEGORIES.LEAD_SOURCE, code: 'phone', displayName: 'Phone Inquiry' },
+  { category: LOOKUP_CATEGORIES.LEAD_REASON, code: 'back_pain', displayName: 'Back Pain' },
+  { category: LOOKUP_CATEGORIES.LEAD_REASON, code: 'weight_loss', displayName: 'Weight Loss' },
+  { category: LOOKUP_CATEGORIES.LEAD_REASON, code: 'skin_care', displayName: 'Skin Care' },
+  { category: LOOKUP_CATEGORIES.LEAD_REASON, code: 'general', displayName: 'General Wellness' },
 ];
 
 function loadState(): CRMState {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(APP_CONFIG.STORAGE_KEY);
     if (raw) return JSON.parse(raw);
   } catch {}
   const ts = now();
@@ -105,7 +104,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<CRMState>(loadState);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(APP_CONFIG.STORAGE_KEY, JSON.stringify(state));
   }, [state]);
 
   const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://crm-api-1ugj.onrender.com').replace(/\/$/, '');
