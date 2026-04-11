@@ -284,7 +284,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
         update('followUps', arr => [...arr, fu]);
       }
       // Mark lead as Lost if outcome is negative
-      if (outcome === 'Not Interested' || outcome === 'Wrong Number' || outcome === 'Disconnected') {
+      if (outcome === 'NotInterested' || outcome === 'WrongNumber' || outcome === 'Disconnected') {
         const followUp = state.followUps.find(f => f.id === id);
         if (followUp) {
           update('leads', arr => arr.map(x => x.id === followUp.leadId ? { ...x, status: 'Lost' as const, updatedAt: now() } : x));

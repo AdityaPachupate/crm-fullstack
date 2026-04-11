@@ -44,13 +44,14 @@ public class CompleteFollowUpHandler(AppDbContext db, ILogger<CompleteFollowUpHa
             followUp.Priority = request.NextFollowUpPriority ?? followUp.Priority;
             followUp.Outcome = request.Outcome; // Record the last attempt reason
             
-            var attemptLog = $"[Attempted {DateTime.UtcNow:g}: {request.Outcome}]";
-            var combinedNotes = string.Empty;
+            var timestamp = DateTime.UtcNow.ToString("dd-MM-yyyy : hh:mm tt");
+            var combinedNotes = followUp.Notes ?? string.Empty;
 
-            // Preserve old notes, add new notes if any, and add attempt log
-            if (!string.IsNullOrEmpty(followUp.Notes)) combinedNotes = followUp.Notes + "\n";
-            if (!string.IsNullOrEmpty(request.Notes)) combinedNotes += request.Notes + " ";
-            combinedNotes += attemptLog;
+            if (!string.IsNullOrEmpty(request.Notes))
+            {
+                if (!string.IsNullOrEmpty(combinedNotes)) combinedNotes += "\n";
+                combinedNotes += $"{timestamp} : USER : {request.Notes}";
+            }
 
             followUp.Notes = combinedNotes;
 
@@ -64,11 +65,16 @@ public class CompleteFollowUpHandler(AppDbContext db, ILogger<CompleteFollowUpHa
             followUp.Outcome = request.Outcome;
             
             // For completion, we also want to preserve history but mark it clearly
-            var completionNotes = string.IsNullOrEmpty(request.Notes) ? "" : request.Notes;
-            if (!string.IsNullOrEmpty(followUp.Notes)) 
-                followUp.Notes = $"{followUp.Notes}\n--- Completed ---\n{completionNotes}";
-            else
-                followUp.Notes = completionNotes;
+            var timestamp = DateTime.UtcNow.ToString("dd-MM-yyyy : hh:mm tt");
+            var currentNotes = followUp.Notes ?? string.Empty;
+
+            if (!string.IsNullOrEmpty(request.Notes))
+            {
+                if (!string.IsNullOrEmpty(currentNotes)) currentNotes += "\n";
+                currentNotes += $"{timestamp} : USER : {request.Notes}";
+            }
+            
+            followUp.Notes = currentNotes.Trim();
 
             followUp.CompletedAt = DateTime.UtcNow;
 

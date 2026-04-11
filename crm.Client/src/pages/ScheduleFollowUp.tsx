@@ -22,7 +22,6 @@ export default function ScheduleFollowUp() {
   const createMutation = useCreateFollowUp();
 
   const [date, setDate] = useState<Date | undefined>();
-  const [contactMedium, setContactMedium] = useState('');
   const [priority, setPriority] = useState<FollowUpPriority>('Medium');
   const [notes, setNotes] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -30,7 +29,6 @@ export default function ScheduleFollowUp() {
   const validate = () => {
     const e: Record<string, string> = {};
     if (!date) e.date = 'Date is required';
-    if (!contactMedium.trim()) e.contactMedium = 'Contact method is required';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -41,7 +39,7 @@ export default function ScheduleFollowUp() {
     await createMutation.mutateAsync({
       leadId,
       followUpDate: format(date!, 'yyyy-MM-dd'),
-      source: contactMedium.trim(), // API calls it 'Source'
+      source: 'Phone', // Default to Phone
       priority,
       notes: notes.trim(),
     });
@@ -71,11 +69,7 @@ export default function ScheduleFollowUp() {
           </Popover>
           {errors.date && <p className="mt-1 text-xs text-destructive">{errors.date}</p>}
         </div>
-        <div>
-          <Label className="text-xs font-medium text-muted-foreground">How will you contact them?</Label>
-          <Input value={contactMedium} onChange={e => setContactMedium(e.target.value)} placeholder="Phone call, WhatsApp, etc." className="mt-1.5 h-10 rounded-lg" />
-          {errors.contactMedium && <p className="mt-1 text-xs text-destructive">{errors.contactMedium}</p>}
-        </div>
+
         <div>
           <Label className="text-xs font-medium text-muted-foreground">Priority</Label>
           <div className="mt-2 flex gap-2">

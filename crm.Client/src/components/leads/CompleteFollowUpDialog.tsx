@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -33,22 +33,35 @@ interface CompleteFollowUpDialogProps {
     nextFollowUpDate?: string;
     nextFollowUpPriority?: FollowUpPriority;
   }) => void;
+  initialNotes?: string;
   isSubmitting?: boolean;
 }
 
-const OUTCOMES = getAllStaticCodes('FollowUpOutcome') as FollowUpOutcome[];
+const OUTCOMES = getAllStaticCodes('FollowUpOutcome').filter(code => code !== 'None') as FollowUpOutcome[];
 
 export function CompleteFollowUpDialog({
   isOpen,
   onClose,
   onConfirm,
+  initialNotes = '',
   isSubmitting
 }: CompleteFollowUpDialogProps) {
-  const [outcome, setOutcome] = useState<FollowUpOutcome>('None');
-  const [notes, setNotes] = useState('');
+  const [outcome, setOutcome] = useState<FollowUpOutcome>('Busy');
+  const [notes, setNotes] = useState(initialNotes);
   const [newStatus, setNewStatus] = useState<LeadStatus | 'NoChange'>('NoChange');
   const [nextDate, setNextDate] = useState('');
   const [nextPriority, setNextPriority] = useState<FollowUpPriority>('Medium');
+
+  // Reset state when dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      setNotes(''); // Keep input empty as requested
+      setOutcome('Busy');
+      setNewStatus('NoChange');
+      setNextDate('');
+      setNextPriority('Medium');
+    }
+  }, [isOpen]);
 
   const handleSubmit = () => {
     onConfirm({
@@ -87,15 +100,29 @@ export function CompleteFollowUpDialog({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="notes">Notes</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="notes">New Notes / Progress</Label>
+              {initialNotes && (
+                <span className="text-[10px] text-muted-foreground italic">Scroll down for history</span>
+              )}
+            </div>
             <Textarea
               id="notes"
-              placeholder="What was discussed?"
+              placeholder="What was discussed in this call?"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="h-20"
             />
           </div>
+
+          {initialNotes && (
+            <div className="grid gap-1.5 opacity-80 mt-1">
+              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Previous History</Label>
+              <div className="bg-slate-50 border rounded p-2 text-[10px] text-slate-500 max-h-[100px] overflow-y-auto whitespace-pre-line leading-relaxed italic">
+                {initialNotes}
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">

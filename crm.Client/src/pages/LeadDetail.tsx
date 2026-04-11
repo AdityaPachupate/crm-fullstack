@@ -51,6 +51,11 @@ export default function LeadDetail() {
     [leadEnrollments, leadRejoins]
   );
 
+  const selectedFollowUp = useMemo(() => 
+    leadFollowUps.find(f => f.id === completingFollowUpId),
+    [leadFollowUps, completingFollowUpId]
+  );
+
   if (loading) return <div className="p-8 text-center text-muted-foreground">Loading patient...</div>;
   if (error) return <div className="p-8 text-center text-destructive">{(error as Error).message}</div>;
   if (!lead) return <div className="p-8 text-center text-muted-foreground">Patient not found</div>;
@@ -156,12 +161,11 @@ export default function LeadDetail() {
                       <span className="text-[10px] text-muted-foreground uppercase font-semibold">Created: {new Date(f.createdAt).toLocaleDateString()}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded font-medium text-slate-600">{f.source}</span>
-                      <LookupBadge category="FollowUpPriority" code={f.priority} />
+                       <LookupBadge category="FollowUpPriority" code={f.priority} />
                     </div>
                   </div>
                   
-                  {f.notes && <p className="mt-1.5 line-clamp-2 text-[11px] text-slate-600 italic bg-slate-50 p-2 rounded">"{f.notes}"</p>}
+                  {f.notes && <p className="mt-1.5 whitespace-pre-line text-[11px] text-slate-600 italic bg-slate-50 p-2 rounded">"{f.notes}"</p>}
                   
                   <div className="mt-3 pt-2 border-t flex items-center justify-between">
                     <span className={cn(
@@ -261,6 +265,7 @@ export default function LeadDetail() {
         onClose={() => setCompletingFollowUpId(null)}
         onConfirm={handleComplete}
         isSubmitting={isCompleting}
+        initialNotes={selectedFollowUp?.notes}
       />
 
       <AlertDialog open={!!deletingFollowUpId} onOpenChange={(open) => !open && setDeletingFollowUpId(null)}>
