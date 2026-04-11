@@ -24,8 +24,8 @@ export interface Lead extends SoftDeletable {
 // ─── Follow-up ───
 export type FollowUpPriority = 'Low' | 'Medium' | 'High';
 export type FollowUpOutcome =
-  | 'None' | 'Busy' | 'Not Interested' | 'Callback Requested'
-  | 'Converted' | 'Wrong Number' | 'Disconnected';
+  | 'None' | 'Busy' | 'NotInterested' | 'CallbackRequested'
+  | 'Converted' | 'WrongNumber' | 'Disconnected';
 
 export interface FollowUp extends SoftDeletable {
   leadId: string;

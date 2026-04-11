@@ -34,31 +34,62 @@ public class CompleteFollowUpHandler(AppDbContext db, ILogger<CompleteFollowUpHa
         }
 
         var lead = followUp.Lead;
+        Guid? nextFollowUpId = null;
 
-        // 2. Update Current FollowUp
-        followUp.Status = FollowUpStatus.Completed;
-        followUp.Outcome = request.Outcome;
-        followUp.Notes = request.Notes;
-        followUp.CompletedAt = DateTime.UtcNow;
+        // 2. Handle Outcome (Reschedule vs Complete)
+        if (request.Outcome == FollowUpOutcome.Busy || request.Outcome == FollowUpOutcome.CallbackRequested)
+        {
+            // RESCHEDULE logic: Update existing record date and keep it pending
+            followUp.FollowUpDate = request.NextFollowUpDate ?? DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1));
+            followUp.Priority = request.NextFollowUpPriority ?? followUp.Priority;
+            followUp.Outcome = request.Outcome; // Record the last attempt reason
+            
+            var attemptLog = $"[Attempted {DateTime.UtcNow:g}: {request.Outcome}]";
+            var combinedNotes = string.Empty;
+
+            // Preserve old notes, add new notes if any, and add attempt log
+            if (!string.IsNullOrEmpty(followUp.Notes)) combinedNotes = followUp.Notes + "\n";
+            if (!string.IsNullOrEmpty(request.Notes)) combinedNotes += request.Notes + " ";
+            combinedNotes += attemptLog;
+
+            followUp.Notes = combinedNotes;
+
+            logger.LogInformation("Follow-up {FollowUpId} rescheduled to {NextDate} due to {Outcome}", 
+                followUp.Id, followUp.FollowUpDate, request.Outcome);
+        }
+        else
+        {
+            // COMPLETE logic: Close current and potentially create next
+            followUp.Status = FollowUpStatus.Completed;
+            followUp.Outcome = request.Outcome;
+            
+            // For completion, we also want to preserve history but mark it clearly
+            var completionNotes = string.IsNullOrEmpty(request.Notes) ? "" : request.Notes;
+            if (!string.IsNullOrEmpty(followUp.Notes)) 
+                followUp.Notes = $"{followUp.Notes}\n--- Completed ---\n{completionNotes}";
+            else
+                followUp.Notes = completionNotes;
+
+            followUp.CompletedAt = DateTime.UtcNow;
+
+            // 4. Auto-Task Trigger (Precedence Rules)
+            if (ShouldScheduleNextFollowUp(lead, request))
+            {
+                var nextFollowUp = CreateNextFollowUp(lead, request);
+                await db.FollowUps.AddAsync(nextFollowUp, cancellationToken);
+                nextFollowUpId = nextFollowUp.Id;
+            }
+
+            logger.LogInformation("Follow-up {FollowUpId} completed with outcome {Outcome}. Next task: {NextFollowUpId}", 
+                followUp.Id, followUp.Outcome, nextFollowUpId);
+        }
 
         // 3. Lead Qualification (Precedence Rules)
         UpdateLeadStatus(lead, request.Outcome, request.NewLeadStatus);
         lead.UpdatedAt = DateTime.UtcNow;
 
-        // 4. Auto-Task Trigger (Precedence Rules)
-        Guid? nextFollowUpId = null;
-        if (ShouldScheduleNextFollowUp(lead, request))
-        {
-            var nextFollowUp = CreateNextFollowUp(lead, request);
-            await db.FollowUps.AddAsync(nextFollowUp, cancellationToken);
-            nextFollowUpId = nextFollowUp.Id;
-        }
-
         // 5. Save Changes (Atomic)
         await db.SaveChangesAsync(cancellationToken);
-
-        logger.LogInformation("Follow-up {FollowUpId} completed with outcome {Outcome}. Next task: {NextFollowUpId}", 
-            followUp.Id, followUp.Outcome, nextFollowUpId);
 
         return new CompleteFollowUpResponse(followUp.Id, followUp.Status, followUp.Outcome, nextFollowUpId);
     }

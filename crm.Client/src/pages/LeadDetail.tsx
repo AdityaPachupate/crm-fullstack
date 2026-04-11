@@ -1,3 +1,4 @@
+import { cn } from '@/lib/utils';
 import { useParams, Link } from 'react-router-dom';
 import { useMemo, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -6,9 +7,21 @@ import { Button } from '@/components/ui/button';
 import { LookupBadge } from '@/components/ui/LookupBadge';
 import PageHeader from '@/components/layout/PageHeader';
 import { maskPhone, relativeDate, formatCurrency, todayStr } from '@/lib/helpers';
-import { Edit, CheckCircle, Pill, Phone, Globe, FileText, Calendar } from 'lucide-react';
+import { Edit, CheckCircle, Pill, Phone, Globe, FileText, Calendar, Trash2, CheckCircle2 } from 'lucide-react';
 import { useLead } from '@/hooks/useLeads';
 import { BillDto, FollowUpDto, EnrollmentDto, RejoinRecordDto, LeadDetail as LeadDetailType } from '@/types';
+import { useFollowUps } from '@/hooks/useFollowUps';
+import { CompleteFollowUpDialog } from '@/components/leads/CompleteFollowUpDialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 
 
@@ -16,6 +29,11 @@ export default function LeadDetail() {
   const { id } = useParams<{ id: string }>();
   const { data: lead, isLoading: loading, error } = useLead(id || '');
   const [activeTab, setActiveTab] = useState('overview');
+  
+  // Follow-up Actions State
+  const { completeFollowUp, deleteFollowUp, isCompleting, isDeleting } = useFollowUps();
+  const [completingFollowUpId, setCompletingFollowUpId] = useState<string | null>(null);
+  const [deletingFollowUpId, setDeletingFollowUpId] = useState<string | null>(null);
 
   const leadFollowUps = useMemo(
     () => (lead?.followUps ?? []).slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
@@ -39,6 +57,21 @@ export default function LeadDetail() {
 
   const hasEnrollment = leadEnrollments.some(e => e.startDate <= todayStr() && e.endDate >= todayStr());
   const hasMedicine = leadBills.some(b => b.medicineBillingAmount > 0);
+  
+  const handleComplete = (data: any) => {
+    if (!completingFollowUpId) return;
+    completeFollowUp.mutate({ id: completingFollowUpId, request: { followUpId: completingFollowUpId, ...data } }, {
+      onSuccess: () => setCompletingFollowUpId(null)
+    });
+  };
+
+  const handleDelete = () => {
+    if (!deletingFollowUpId) return;
+    deleteFollowUp.mutate(deletingFollowUpId, {
+      onSuccess: () => setDeletingFollowUpId(null)
+    });
+  };
+
   const openOverview = () => {
     setActiveTab('overview');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -115,14 +148,56 @@ export default function LeadDetail() {
               <Button variant="outline" size="sm" className="w-full rounded-full text-xs">+ Schedule Follow-up</Button>
             </Link>
             {leadFollowUps.map(f => (
-              <Card key={f.id} className="border shadow-none">
+              <Card key={f.id} className="border shadow-none relative overflow-hidden">
                 <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium">{new Date(f.followUpDate).toLocaleDateString()}</p>
-                    <LookupBadge category="FollowUpPriority" code={f.priority} />
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex flex-col">
+                      <p className="text-sm font-bold text-indigo-600">Scheduled: {new Date(f.followUpDate).toLocaleDateString()}</p>
+                      <span className="text-[10px] text-muted-foreground uppercase font-semibold">Created: {new Date(f.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded font-medium text-slate-600">{f.source}</span>
+                      <LookupBadge category="FollowUpPriority" code={f.priority} />
+                    </div>
                   </div>
-                  {f.notes && <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground">{f.notes}</p>}
-                  {f.completedAt && <p className="mt-1.5 text-xs text-status-converted">✓ Completed · {f.status}</p>}
+                  
+                  {f.notes && <p className="mt-1.5 line-clamp-2 text-[11px] text-slate-600 italic bg-slate-50 p-2 rounded">"{f.notes}"</p>}
+                  
+                  <div className="mt-3 pt-2 border-t flex items-center justify-between">
+                    <span className={cn(
+                      "text-[10px] font-bold uppercase tracking-wider",
+                      f.status === 'Pending' ? "text-amber-600" : "text-emerald-600"
+                    )}>
+                      {f.status}
+                    </span>
+                    
+                    <div className="flex items-center gap-2">
+                      {!f.completedAt ? (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-7 px-2 text-[10px] font-bold text-emerald-700 hover:bg-emerald-50 border-emerald-100 bg-emerald-50/30"
+                          onClick={() => setCompletingFollowUpId(f.id)}
+                        >
+                          <CheckCircle2 size={12} className="mr-1" /> Mark Complete
+                        </Button>
+                      ) : (
+                        <p className="text-[11px] font-semibold text-emerald-600 flex items-center gap-1">
+                          <CheckCircle size={12} /> Completed {new Date(f.completedAt).toLocaleDateString()}
+                        </p>
+                      )}
+                      
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-7 w-7 text-destructive hover:bg-destructive/5 rounded-full"
+                        onClick={() => setDeletingFollowUpId(f.id)}
+                        title="Delete"
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -179,6 +254,34 @@ export default function LeadDetail() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Action Modals */}
+      <CompleteFollowUpDialog
+        isOpen={!!completingFollowUpId}
+        onClose={() => setCompletingFollowUpId(null)}
+        onConfirm={handleComplete}
+        isSubmitting={isCompleting}
+      />
+
+      <AlertDialog open={!!deletingFollowUpId} onOpenChange={(open) => !open && setDeletingFollowUpId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will move the follow-up record to Trash. It can be restored later but will no longer appear in the active schedule.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? 'Deleting...' : 'Move to Trash'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

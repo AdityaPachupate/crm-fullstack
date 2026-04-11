@@ -40,7 +40,7 @@ export default function ScheduleFollowUp() {
     
     await createMutation.mutateAsync({
       leadId,
-      followUpDate: date!.toISOString().split('T')[0],
+      followUpDate: format(date!, 'yyyy-MM-dd'),
       source: contactMedium.trim(), // API calls it 'Source'
       priority,
       notes: notes.trim(),

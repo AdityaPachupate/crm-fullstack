@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { followupsApi, CreateFollowUpRequest, CompleteFollowUpRequest } from '@/api/followups.api';
+import { followupsApi, CompleteFollowUpRequest } from '@/api/followups.api';
 import { toast } from 'sonner';
 import { LEADS_QUERY_KEY } from './useLeads';
 
@@ -9,19 +9,54 @@ export function useFollowUpsToday() {
   return useQuery({
     queryKey: [...FOLLOWUPS_QUERY_KEY, 'today'],
     queryFn: () => followupsApi.getAllToday(),
-    staleTime: 1 * 60 * 1000, // 1 minute (follow-ups are time-sensitive)
   });
+}
+
+export function useFollowUps() {
+  const queryClient = useQueryClient();
+
+  const completeMutation = useMutation({
+    mutationFn: ({ id, request }: { id: string; request: CompleteFollowUpRequest }) => 
+      followupsApi.complete(id, request),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: LEADS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: FOLLOWUPS_QUERY_KEY });
+      toast.success('Follow-up marked as complete');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to complete follow-up');
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => followupsApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: LEADS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: FOLLOWUPS_QUERY_KEY });
+      toast.success('Follow-up deleted');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to delete follow-up');
+    }
+  });
+
+  return {
+    completeFollowUp: completeMutation,
+    deleteFollowUp: deleteMutation,
+    isCompleting: completeMutation.isPending,
+    isDeleting: deleteMutation.isPending
+  };
 }
 
 export function useCreateFollowUp() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: (request: CreateFollowUpRequest) => followupsApi.create(request),
-    onSuccess: (_, variables) => {
+    mutationFn: (request: any) => followupsApi.create(request),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: LEADS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: FOLLOWUPS_QUERY_KEY });
-      queryClient.invalidateQueries({ queryKey: [...LEADS_QUERY_KEY, variables.leadId] });
-      toast.success('Follow-up scheduled successfully');
+      toast.success('Follow-up scheduled');
     },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to schedule follow-up');
@@ -29,63 +64,6 @@ export function useCreateFollowUp() {
   });
 }
 
-export function useCompleteFollowUp() {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: ({ id, request }: { id: string; request: CompleteFollowUpRequest }) => 
-      followupsApi.complete(id, request),
-    onMutate: async ({ id }) => {
-      await queryClient.cancelQueries({ queryKey: [...FOLLOWUPS_QUERY_KEY, 'today'] });
-      const previousFollowups = queryClient.getQueryData<any[]>([...FOLLOWUPS_QUERY_KEY, 'today']);
-      
-      // Optimistically remove the follow-up from the today's list
-      if (previousFollowups) {
-        queryClient.setQueryData([...FOLLOWUPS_QUERY_KEY, 'today'], 
-          previousFollowups.filter(f => f.id !== id)
-        );
-      }
-      
-      return { previousFollowups };
-    },
-    onError: (error: any, _variables, context) => {
-      if (context?.previousFollowups) {
-        queryClient.setQueryData([...FOLLOWUPS_QUERY_KEY, 'today'], context.previousFollowups);
-      }
-      toast.error(error.message || 'Failed to complete follow-up');
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: FOLLOWUPS_QUERY_KEY });
-      queryClient.invalidateQueries({ queryKey: LEADS_QUERY_KEY });
-    }
-  });
-}
-
-export function useDeleteFollowUp() {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: (id: string) => followupsApi.delete(id),
-    onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey: [...FOLLOWUPS_QUERY_KEY, 'today'] });
-      const previousFollowups = queryClient.getQueryData<any[]>([...FOLLOWUPS_QUERY_KEY, 'today']);
-      
-      if (previousFollowups) {
-        queryClient.setQueryData([...FOLLOWUPS_QUERY_KEY, 'today'], 
-          previousFollowups.filter(f => f.id !== id)
-        );
-      }
-      
-      return { previousFollowups };
-    },
-    onError: (error: any, _id, context) => {
-      if (context?.previousFollowups) {
-        queryClient.setQueryData([...FOLLOWUPS_QUERY_KEY, 'today'], context.previousFollowups);
-      }
-      toast.error(error.message || 'Failed to delete follow-up');
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: FOLLOWUPS_QUERY_KEY });
-    }
-  });
-}
+// Named exports for compatibility with older code
+export const useCompleteFollowUp = () => useFollowUps().completeFollowUp;
+export const useDeleteFollowUp = () => useFollowUps().deleteFollowUp;

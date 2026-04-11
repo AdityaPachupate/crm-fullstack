@@ -6,10 +6,10 @@ const PRIORITIES: FollowUpPriority[] = ['Low', 'Medium', 'High'];
 const OUTCOMES: FollowUpOutcome[] = [
   'None',
   'Busy',
-  'Not Interested',
-  'Callback Requested',
+  'NotInterested',
+  'CallbackRequested',
   'Converted',
-  'Wrong Number',
+  'WrongNumber',
   'Disconnected'
 ];
 

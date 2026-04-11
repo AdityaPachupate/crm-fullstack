@@ -18,7 +18,7 @@ import { useLookupRegistry } from '@/hooks/useLookupRegistry';
 import { LookupBadge } from '@/components/ui/LookupBadge';
 import { getAllStaticCodes } from '@/lib/lookup-registry';
 
-const NEGATIVE_OUTCOMES: FollowUpOutcome[] = ['Not Interested', 'Wrong Number', 'Disconnected'];
+const NEGATIVE_OUTCOMES: FollowUpOutcome[] = ['NotInterested', 'WrongNumber', 'Disconnected'];
 
 export default function FollowUpsList() {
   const { data: followUps = [], isLoading: loading } = useFollowUpsToday();
@@ -70,7 +70,7 @@ export default function FollowUpsList() {
         outcome,
         notes,
         newLeadStatus: isNegative ? 'Lost' : undefined,
-        nextFollowUpDate: nextDate ? nextDate.toISOString().split('T')[0] : undefined,
+        nextFollowUpDate: nextDate ? format(nextDate, 'yyyy-MM-dd') : undefined,
         nextFollowUpPriority: nextDate ? nextPriority : undefined,
       }
     });

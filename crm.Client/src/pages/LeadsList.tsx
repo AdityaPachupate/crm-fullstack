@@ -143,11 +143,11 @@ export default function LeadsList() {
           <p className="py-16 text-center text-sm text-muted-foreground">No patients found</p>
         ) : (
           leads.map((lead, index) => (
-            <Link 
+            <div 
               key={lead.id} 
-              to={`/leads/${lead.id}`}
+              onClick={() => navigate(`/leads/${lead.id}`)}
               onMouseEnter={() => prefetchLead(lead.id)}
-              className="block group bg-card border rounded-xl py-2.5 px-4 hover:shadow-md hover:border-indigo-100 transition-all duration-300"
+              className="block group bg-card border rounded-xl py-2.5 px-4 hover:shadow-md hover:border-indigo-100 transition-all duration-300 cursor-pointer"
             >
               <div className="flex justify-between items-start">
                 <div className="space-y-1 min-w-0">
@@ -166,8 +166,10 @@ export default function LeadsList() {
                 <div className="flex flex-col items-end gap-1.5 shrink-0">
                   <a 
                     href={`tel:${lead.phone}`}
-                    onClick={(e) => e.stopPropagation()}
-                    className="text-sm text-primary font-bold hover:underline"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
+                    className="z-10 text-sm text-primary font-bold hover:underline"
                   >
                     {lead.phone}
                   </a>
@@ -185,7 +187,7 @@ export default function LeadsList() {
                   </div>
                 </div>
               )}
-            </Link>
+            </div>
           ))
         )}
       </div>
