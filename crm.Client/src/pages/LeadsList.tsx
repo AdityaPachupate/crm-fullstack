@@ -178,7 +178,7 @@ export default function LeadsList() {
                   <span className="text-[11px] text-muted-foreground hidden sm:inline">{relativeDate(lead.createdAt)}</span>
                 </div>
               </div>
-            </div>
+            </Link>
           ))
         )}
       </div>
