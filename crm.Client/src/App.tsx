@@ -1,4 +1,6 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { createIndexedDBPersister } from "@/lib/persistence";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
@@ -25,10 +27,29 @@ import TrashManagement from "@/pages/TrashManagement";
 import MoreMenu from "@/pages/MoreMenu";
 import NotFound from "@/pages/NotFound";
 
-const queryClient = new QueryClient();
+/**
+ * We set a high gcTime (formerly cacheTime) to ensure that the persistent 
+ * storage actually keeps the data for a long duration.
+ */
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      gcTime: 1000 * 60 * 60 * 24, // 24 hours
+      staleTime: 1000 * 60 * 5, // 5 minutes by default
+    },
+  },
+});
+
+const persister = createIndexedDBPersister();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
+  <PersistQueryClientProvider 
+    client={queryClient} 
+    persistOptions={{ persister }}
+    onSuccess={() => {
+      console.log('✅ Cache persistence restored successfully');
+    }}
+  >
     <TooltipProvider>
       <CRMProvider>
         <Toaster />
@@ -60,7 +81,7 @@ const App = () => (
         </BrowserRouter>
       </CRMProvider>
     </TooltipProvider>
-  </QueryClientProvider>
+  </PersistQueryClientProvider>
 );
 
 export default App;
