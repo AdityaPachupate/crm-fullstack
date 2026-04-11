@@ -153,10 +153,10 @@ export default function LeadsList() {
         ) : (
           leads.map(lead => (
             <Link 
-              key={lead.id} 
+              key={lead.id}
               to={`/leads/${lead.id}`} 
               className="block"
-              onMouseEnter={() => prefetchLead(lead.id)}
+              onPointerDown={() => prefetchLead(lead.id)}
             >
               <div className="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm transition-colors hover:bg-muted/30">
                 {/* Avatar */}
