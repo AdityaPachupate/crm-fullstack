@@ -4,7 +4,7 @@ import { usePrefetch } from '@/hooks/usePrefetch';
 
 const tabs = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/leads', icon: Users, label: 'Leads' },
+  { to: '/leads', icon: Users, label: 'Patients' },
   { to: '/follow-ups', icon: PhoneCall, label: 'Follow-ups' },
   { to: '/more', icon: MoreHorizontal, label: 'More' },
 ];

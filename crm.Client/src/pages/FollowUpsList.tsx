@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import PriorityBadge from '@/components/shared/PriorityBadge';
+
 import { maskPhone, isToday, isPast } from '@/lib/helpers';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from '@/components/ui/drawer';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,9 +14,10 @@ import { cn } from '@/lib/utils';
 import { FollowUp, FollowUpOutcome, FollowUpPriority } from '@/types';
 import { useLeads } from '@/hooks/useLeads';
 import { useCompleteFollowUp, useFollowUpsToday } from '@/hooks/useFollowUps';
-import { ALL_STATUSES } from '@/constants';
+import { useLookupRegistry } from '@/hooks/useLookupRegistry';
+import { LookupBadge } from '@/components/ui/LookupBadge';
+import { getAllStaticCodes } from '@/lib/lookup-registry';
 
-const OUTCOMES: FollowUpOutcome[] = ['None', 'Busy', 'Not Interested', 'Callback Requested', 'Converted', 'Wrong Number', 'Disconnected'];
 const NEGATIVE_OUTCOMES: FollowUpOutcome[] = ['Not Interested', 'Wrong Number', 'Disconnected'];
 
 export default function FollowUpsList() {
@@ -24,6 +25,10 @@ export default function FollowUpsList() {
   const { data: leadsData } = useLeads();
   const leads = leadsData?.items || [];
   const completeMutation = useCompleteFollowUp();
+  const { getLookupMetadata } = useLookupRegistry();
+
+  const outcomes = getAllStaticCodes('FollowUpOutcome') as FollowUpOutcome[];
+  const priorities = getAllStaticCodes('FollowUpPriority') as FollowUpPriority[];
 
   const [selected, setSelected] = useState<FollowUp | null>(null);
   const [outcome, setOutcome] = useState<FollowUpOutcome>('None');
@@ -92,7 +97,6 @@ export default function FollowUpsList() {
               className="flex items-center gap-3 px-5 py-3.5 cursor-pointer hover:bg-muted/50 transition-colors"
               onClick={() => openSheet(f)}
             >
-              <span className={`h-2 w-2 shrink-0 rounded-full ${f.priority === 'High' ? 'bg-priority-high' : f.priority === 'Medium' ? 'bg-priority-medium' : 'bg-priority-low'}`} />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{lead?.name || 'Unknown'}</p>
                 {lead ? (
@@ -107,7 +111,7 @@ export default function FollowUpsList() {
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 {overdue && <span className="text-[10px] font-medium text-destructive bg-destructive/10 px-2 py-0.5 rounded-full">Overdue</span>}
-                <PriorityBadge priority={f.priority} />
+                <LookupBadge category="FollowUpPriority" code={f.priority} />
               </div>
             </div>
           );
@@ -124,18 +128,26 @@ export default function FollowUpsList() {
             <div>
               <Label className="text-xs font-medium text-muted-foreground">Outcome</Label>
               <div className="mt-2 flex flex-wrap gap-2">
-                {OUTCOMES.map(o => (
-                  <Button
-                    key={o}
-                    type="button"
-                    size="sm"
-                    variant={outcome === o ? 'default' : 'outline'}
-                    className="rounded-full text-xs h-8"
-                    onClick={() => setOutcome(o)}
-                  >
-                    {o}
-                  </Button>
-                ))}
+                {outcomes.map(o => {
+                  const meta = getLookupMetadata('FollowUpOutcome', o);
+                  const Icon = meta.icon;
+                  return (
+                    <Button
+                      key={o}
+                      type="button"
+                      size="sm"
+                      variant={outcome === o ? 'default' : 'outline'}
+                      className={cn(
+                        "rounded-full text-xs h-8 gap-1.5",
+                        outcome === o ? "" : "hover:border-slate-300"
+                      )}
+                      onClick={() => setOutcome(o)}
+                    >
+                      {Icon && <Icon size={12} />}
+                      {meta.label}
+                    </Button>
+                  );
+                })}
               </div>
               {NEGATIVE_OUTCOMES.includes(outcome) && (
                 <div className="mt-2.5 flex items-center gap-2 rounded-lg bg-destructive/5 border border-destructive/20 p-2.5 text-xs text-destructive">
@@ -176,18 +188,21 @@ export default function FollowUpsList() {
               <div>
                 <Label className="text-xs font-medium text-muted-foreground">Priority</Label>
                 <div className="mt-2 flex gap-2">
-                  {(['Low', 'Medium', 'High'] as FollowUpPriority[]).map(p => (
-                    <Button
-                      key={p}
-                      type="button"
-                      size="sm"
-                      variant={nextPriority === p ? 'default' : 'outline'}
-                      className="flex-1 rounded-full text-xs"
-                      onClick={() => setNextPriority(p)}
-                    >
-                      {p}
-                    </Button>
-                  ))}
+                  {priorities.map(p => {
+                    const meta = getLookupMetadata('FollowUpPriority', p);
+                    return (
+                      <Button
+                        key={p}
+                        type="button"
+                        size="sm"
+                        variant={nextPriority === p ? 'default' : 'outline'}
+                        className="flex-1 rounded-full text-xs"
+                        onClick={() => setNextPriority(p)}
+                      >
+                        {meta.label}
+                      </Button>
+                    );
+                  })}
                 </div>
               </div>
             )}

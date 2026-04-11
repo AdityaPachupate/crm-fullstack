@@ -1,6 +1,40 @@
-# Panchakarma CRM: Feature & API Integration Guide
+# Panchakarma CRM: High-Performance Clinical Management
 
-This guide details the application's capabilities across its core modules and the corresponding API endpoints that power them.
+A production-ready, mobile-first CRM engineered for extreme clinical efficiency. This project implements advanced architectural patterns to solve real-world data persistence, performance, and scalability challenges.
+
+---
+
+## 🚀 Engineering Excellence (Industry Standards)
+*Advanced architectural patterns implemented to meet enterprise-grade stability and performance requirements.*
+
+### 🗄️ Offline-First Resilience Engine
+Implemented a high-durability persistence layer using **TanStack Query (React Query)** and **IndexedDB**.
+- **Data Durability**: Application state survives page refreshes and browser restarts via a custom IndexedDB persister.
+- **Smart Hydration**: 24-hour `gcTime` ensures patient records are available instantly on launch, providing a native-app feel even during network outages.
+
+### 🧩 Vertical Slice Architecture (Backend)
+Transitioned from traditional N-Tier/Onion architecture to **Vertical Slices**. All logic for a single feature (Request, Response, Handler, Validator, and Persistence) is encapsulated in one logical slice, maximizing cohesion and maintainability.
+
+### ⚡ Performance: Zero-Latency Experience
+- **Intelligent Prefetching**: Utilizes high-precision prefetching strategies on user interactions to eliminate perceived API latency.
+- **Optimistic UI with Rollbacks**: All state mutations reflect instantly in the UI with a transactional rollback strategy ensuring the local cache remains accurate if background synchronization fails.
+
+### 🏗️ CQRS & MediatR Pattern
+Decoupled Read and Write operations using the **Command Query Responsibility Segregation** pattern.
+- **Clean API Surface**: MediatR simplifies controllers into simple dispatchers.
+- **Pipeline Behaviors**: Integrated global validation (FluentValidation) and standardized exception handling via MediatR pipelines.
+
+---
+
+## ✨ Modern Frontend Features
+*Display-worthy UI component innovations built for recruiter assessment.*
+
+1.  **Direct-Action Patient Cards**: Lead cards feature **One-Tap Direct Calling** via `tel:` integration, enabling instant staff outreach from the list view.
+2.  **Geometric Minimalism**: A rigorous "Squareish" design system utilizing unified `rounded-lg` and `rounded-2xl` tokens to create a structured, professional clinical aesthetic.
+3.  **Real-Time Context Indicators**: Instant visual confirmation of active enrollments and pharmacy records via dedicated, metadata-driven status icons on each lead.
+4.  **High-Speed Filter Navigation**: A custom-built **Quick Status Bar** at the top of the Leads List allowing for rapid, single-tap switching between lead pipelines.
+5.  **Automated Serial Indexing**: Clean, automated serial numbering on all cards to maintain clear information hierarchy during patient check-ins.
+6.  **Unified Metadata Registry**: All UI badges (Status, Priority, Source) are rendered through a global component fueled by a lookup registry, ensuring 100% design consistency.
 
 ---
 
@@ -163,15 +197,22 @@ This guide details the application's capabilities across its core modules and th
 
 ---
 
+## 🔮 Roadmap & Missing Features
+*Planned enhancements for upcoming versions.*
+
+- **📁 Document Vault**: Capability to upload and manage prescriptions and lab reports directly within a lead's profile.
+- **🔔 Automated Notifications**: Automated WhatsApp/SMS alerts for upcoming follow-ups and treatment dates.
+- **📊 Business Analytics**: Interactive charts for revenue trends, conversion rates, and source performance.
+- **🔐 Role-Based Access**: Granular permissions for Doctors, Receptionists, and Pharmacy staff.
+
+---
+
 ## 🚀 Technical Standards & Architecture
 
 ### 🛤️ Global Routing Standard
 All API endpoints are prefixed with `/api/`. 
 - **Routes**: Do not include `/api` in your feature route string; the global group prefix handles this.
-- **Health Checks**: 
-    - Full: `/api/health`
-    - Liveness: `/api/health/live`
-    - Readiness: `/api/health/ready`
+- **Health Checks**: Full (`/api/health`), Liveness (`/api/health/live`), and Readiness (`/api/health/ready`).
 
 ### 🏗️ Vertical Slice Architecture
 Code is organized by **Features** (`Features/Leads/CreateLead`). All requirements for a single functionality (Request, Response, Handler, Validator) are encapsulated in one place.
@@ -182,17 +223,16 @@ Code is organized by **Features** (`Features/Leads/CreateLead`). All requirement
 
 ### 🛡️ Pipeline Behaviors & Validation
 Input validation uses **FluentValidation**. 
-- **Pattern**: Validators must inherit from `AbstractValidator<TCommand>` (not `TRequest`) to be picked up by the MediatR `ValidationBehavior` pipeline.
-- **Error Responses**: 
-    - **400 Bad Request**: Used for structural validation errors and malformed JSON.
-    - **409 Conflict**: Used for business rule violations like uniqueness constraints (handled via `BusinessException`).
-
-### 🧐 Exception Handling
-A centralized `GlobalExceptionHandler` ensures consistent responses:
-- **ValidationException** & **BadHttpRequestException** $\rightarrow$ `400 Bad Request`
-- **BusinessException** $\rightarrow$ Customizable (usually `409 Conflict` or `404 Not Found`)
-- **Unhandled Exceptions** $\rightarrow$ `500 Internal Server Error`
+- **Pattern**: Validators inherit from `AbstractValidator<TCommand>` for MediatR pipeline integration.
+- **Error Handling**: A centralized `GlobalExceptionHandler` ensures consistent 400 (Validation), 409 (Conflict), and 500 (Internal) error responses.
 
 ### 🗑️ Lifecycle & Trash System
 - **Cascading Trash**: Trashing a top-level entity (like a Lead) automatically trashes all dependent records (Follow-ups, Enrollments, Bills).
 - **Soft Delete Filtering**: Normal views and `GetById` endpoints respect soft-delete status unless explicitly asked for trash views.
+
+---
+
+## 🚀 Technical Stack
+- **Frontend**: React 18, Vite, TanStack Query v5, Zustand, Tailwind CSS, IndexedDB.
+- **Backend**: .NET 8, MediatR, EF Core, FluentValidation, PostgreSQL.
+- **Architecture**: Vertical Slice Architecture, CQRS, Optimistic State Updates.

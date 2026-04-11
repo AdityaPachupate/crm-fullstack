@@ -3,8 +3,7 @@ import { useMemo, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import StatusBadge from '@/components/shared/StatusBadge';
-import PriorityBadge from '@/components/shared/PriorityBadge';
+import { LookupBadge } from '@/components/ui/LookupBadge';
 import PageHeader from '@/components/layout/PageHeader';
 import { maskPhone, relativeDate, formatCurrency, todayStr } from '@/lib/helpers';
 import { Edit, CheckCircle, Pill, Phone, Globe, FileText, Calendar } from 'lucide-react';
@@ -34,9 +33,9 @@ export default function LeadDetail() {
     [leadEnrollments, leadRejoins]
   );
 
-  if (loading) return <div className="p-8 text-center text-muted-foreground">Loading lead...</div>;
+  if (loading) return <div className="p-8 text-center text-muted-foreground">Loading patient...</div>;
   if (error) return <div className="p-8 text-center text-destructive">{(error as Error).message}</div>;
-  if (!lead) return <div className="p-8 text-center text-muted-foreground">Lead not found</div>;
+  if (!lead) return <div className="p-8 text-center text-muted-foreground">Patient not found</div>;
 
   const hasEnrollment = leadEnrollments.some(e => e.startDate <= todayStr() && e.endDate >= todayStr());
   const hasMedicine = leadBills.some(b => b.medicineBillingAmount > 0);
@@ -54,7 +53,7 @@ export default function LeadDetail() {
       />
       <div className="p-5">
         <div className="mb-5 flex items-center gap-3 flex-wrap">
-          <StatusBadge status={lead.status} />
+          <LookupBadge category="LeadStatus" code={lead.status} />
           <Button
             variant={activeTab === 'overview' ? 'default' : 'ghost'}
             size="sm"
@@ -120,7 +119,7 @@ export default function LeadDetail() {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-medium">{new Date(f.followUpDate).toLocaleDateString()}</p>
-                    <PriorityBadge priority={f.priority} />
+                    <LookupBadge category="FollowUpPriority" code={f.priority} />
                   </div>
                   {f.notes && <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground">{f.notes}</p>}
                   {f.completedAt && <p className="mt-1.5 text-xs text-status-converted">✓ Completed · {f.status}</p>}

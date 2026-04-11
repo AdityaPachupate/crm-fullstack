@@ -37,6 +37,11 @@ namespace CRM.API.Features.Leads.GetLeads
                 queryableLeads = queryableLeads.Where(l => l.Source == query.Source);
             }
 
+            if (!string.IsNullOrEmpty(query.Reason))
+            {
+                queryableLeads = queryableLeads.Where(l => l.Reason == query.Reason);
+            }
+
             // Analytics Filters
             if (query.HasEnrollment.HasValue)
             {
@@ -59,8 +64,8 @@ namespace CRM.API.Features.Leads.GetLeads
                     l.Name,
                     l.Phone,
                     l.Status,
-                    l.Source,
-                    l.Reason,
+                    l.Source ?? string.Empty,
+                    l.Reason ?? string.Empty,
                     l.CreatedAt,
                     l.UpdatedAt,
                     l.Enrollments.Any(),

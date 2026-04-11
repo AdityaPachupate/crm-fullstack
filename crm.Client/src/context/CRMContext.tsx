@@ -64,7 +64,7 @@ interface CRMContextType extends CRMState {
   refreshLeads: (params?: { status?: string; search?: string }) => Promise<void>;
 }
 
-import { ALL_STATUSES, APP_CONFIG, LOOKUP_CATEGORIES } from '@/constants';
+import { APP_CONFIG, LOOKUP_CATEGORIES } from '@/constants';
 
 const defaultLookups: Omit<LookupValue, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>[] = [
   { category: LOOKUP_CATEGORIES.LEAD_SOURCE, code: 'walk_in', displayName: 'Walk-in' },
@@ -122,7 +122,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
             id: item.id,
             name: item.name,
             phone: item.phone,
-            status: ALL_STATUSES[item.status] || 'New',
+            status: item.status || 'New',
             source: item.source,
             reason: item.reason,
             createdAt: item.createdAt,
@@ -175,7 +175,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
           id: item.id,
           name: item.name,
           phone: item.phone,
-          status: ALL_STATUSES[item.status] || 'New',
+          status: item.status || 'New',
           source: item.source,
           reason: item.reason,
           createdAt: item.createdAt,
@@ -217,7 +217,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
           body: JSON.stringify({
             name: l.name,
             phone: l.phone,
-            status: ALL_STATUSES.indexOf(l.status),
+            status: l.status,
             source: l.source,
             reason: l.reason
           })
@@ -264,7 +264,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({
           id: id,
           ...l,
-          status: l.status ? ALL_STATUSES.indexOf(l.status) : undefined
+          status: l.status
         })
       }).catch(err => console.error('Failed to update lead in API:', err));
     },

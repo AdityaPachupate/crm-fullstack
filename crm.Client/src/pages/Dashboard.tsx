@@ -5,6 +5,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Users, CalendarCheck, PhoneCall, DollarSign, ChevronRight } from 'lucide-react';
 import { formatCurrency, isToday, isPast, todayStr } from '@/lib/helpers';
 
+import { getStaticLookup } from '@/lib/lookup-registry';
+
 export default function Dashboard() {
   const { leads, enrollments, followUps, bills } = useCRM();
 
@@ -47,7 +49,7 @@ export default function Dashboard() {
       {/* Metric Cards */}
       <div className="grid grid-cols-2 gap-3">
         {[
-          { label: 'Total Leads', value: activeLeads.length, icon: Users },
+          { label: 'Total Patients', value: activeLeads.length, icon: Users },
           { label: 'Active Enrollments', value: activeEnrollments.length, icon: CalendarCheck },
           { label: "Today's Follow-ups", value: todayFollowUps.length, icon: PhoneCall, badge: overdueCount },
           { label: 'Pending Billing', value: formatCurrency(Math.max(0, pendingBilling)), icon: DollarSign },
@@ -84,10 +86,12 @@ export default function Dashboard() {
             {todayFollowUps.slice(0, 5).map(f => {
               const lead = activeLeads.find(l => l.id === f.leadId);
               const overdue = isPast(f.followUpDate) && !isToday(f.followUpDate);
+              const priorityMeta = getStaticLookup('FollowUpPriority', f.priority);
+              
               return (
                 <Link key={f.id} to="/follow-ups" className="block">
                   <div className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors">
-                    <span className={`h-2 w-2 shrink-0 rounded-full ${f.priority === 'High' ? 'bg-priority-high' : f.priority === 'Medium' ? 'bg-priority-medium' : 'bg-priority-low'}`} />
+                    <span className={`h-2 w-2 shrink-0 rounded-full ${priorityMeta.bgColor}`} />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{lead?.name || 'Unknown'}</p>
                       {overdue && <span className="text-[10px] font-medium text-destructive">Overdue</span>}

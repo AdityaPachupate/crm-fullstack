@@ -7,7 +7,7 @@ const items = [
   { to: '/enrollments', label: 'Enrollments', desc: 'Patient enrollments', icon: Receipt },
   { to: '/bills/new', label: 'Create Bill', desc: 'Standalone billing', icon: Receipt },
   { to: '/rejoins', label: 'Rejoins', desc: 'Returning patients', icon: RefreshCw },
-  { to: '/settings/lookups', label: 'Configure Dropdowns', desc: 'Lead sources & reasons', icon: Settings },
+  { to: '/settings/lookups', label: 'Configure Dropdowns', desc: 'Patient sources & reasons', icon: Settings },
   { to: '/trash', label: 'Trash', desc: 'Deleted items', icon: Trash2 },
 ];
 

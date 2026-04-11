@@ -15,8 +15,8 @@ export default function LookupsAdmin() {
     <div>
       <PageHeader title="Configure Dropdowns" back />
       <div className="space-y-4 p-5">
-        <LookupSection category="LeadSource" title="Lead Sources" />
-        <LookupSection category="LeadReason" title="Lead Reasons" />
+        <LookupSection category="LeadSource" title="Patient Sources" />
+        <LookupSection category="LeadReason" title="Patient Reasons" />
       </div>
     </div>
   );

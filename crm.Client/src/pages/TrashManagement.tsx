@@ -13,7 +13,7 @@ export default function TrashManagement() {
   const [confirmId, setConfirmId] = useState<{ entity: Entity; id: string; name: string } | null>(null);
 
   const entities: { key: Entity; label: string; items: any[]; restore: (id: string) => void; hardDelete: (id: string) => void; getName: (item: any) => string }[] = [
-    { key: 'leads', label: 'Leads', items: crm.leads.filter(l => l.deletedAt), restore: crm.restoreLead, hardDelete: crm.hardDeleteLead, getName: (l) => l.name },
+    { key: 'leads', label: 'Patients', items: crm.leads.filter(l => l.deletedAt), restore: crm.restoreLead, hardDelete: crm.hardDeleteLead, getName: (l) => l.name },
     { key: 'followUps', label: 'Follow-ups', items: crm.followUps.filter(f => f.deletedAt), restore: crm.restoreFollowUp, hardDelete: crm.hardDeleteFollowUp, getName: (f) => { const lead = crm.leads.find(l => l.id === f.leadId); return `${lead?.name || 'Unknown'} - ${f.followUpDate}`; } },
     { key: 'enrollments', label: 'Enrollments', items: crm.enrollments.filter(e => e.deletedAt), restore: crm.restoreEnrollment, hardDelete: crm.hardDeleteEnrollment, getName: (e) => e.packageName },
     { key: 'bills', label: 'Bills', items: crm.bills.filter(b => b.deletedAt), restore: crm.restoreBill, hardDelete: crm.hardDeleteBill, getName: (b) => `Bill ${new Date(b.createdAt).toLocaleDateString()}` },

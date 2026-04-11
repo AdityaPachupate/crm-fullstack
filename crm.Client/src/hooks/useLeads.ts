@@ -2,13 +2,37 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { leadsApi } from '@/api/leads.api';
 import { Lead, LeadsParams, LeadsResponse } from '@/types';
 import { toast } from 'sonner';
+import { useLeadsStore } from '@/store/useLeadsStore';
 
 export const LEADS_QUERY_KEY = ['leads'];
 
 export function useLeads(params: LeadsParams = {}) {
+  const { 
+    search, 
+    statusFilter, 
+    sourceFilter, 
+    reasonFilter, 
+    hasEnrollmentFilter, 
+    hasMedicineFilter 
+  } = useLeadsStore();
+
+  const rawStatus = params.status ?? statusFilter;
+  const rawSource = params.source ?? sourceFilter;
+  const rawReason = params.reason ?? reasonFilter;
+
+  const activeParams: LeadsParams = {
+    ...params,
+    search: params.search ?? search,
+    status: rawStatus === 'All' ? undefined : rawStatus,
+    source: rawSource === 'All' ? undefined : rawSource,
+    reason: rawReason === 'All' ? undefined : rawReason,
+    hasEnrollment: hasEnrollmentFilter === 'All' ? undefined : hasEnrollmentFilter,
+    hasMedicine: hasMedicineFilter === 'All' ? undefined : hasMedicineFilter,
+  };
+
   return useQuery({
-    queryKey: [...LEADS_QUERY_KEY, params],
-    queryFn: () => leadsApi.getAll(params),
+    queryKey: [...LEADS_QUERY_KEY, activeParams],
+    queryFn: () => leadsApi.getAll(activeParams),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }

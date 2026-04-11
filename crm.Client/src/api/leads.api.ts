@@ -5,21 +5,24 @@ import { ALL_STATUSES, APP_CONFIG } from '@/constants';
 export const leadsApi = {
   getAll: async (params: LeadsParams = {}): Promise<LeadsResponse> => {
     const query = new URLSearchParams();
-    if (params.status && params.status !== 'All') query.set('status', params.status);
-    if (params.search) query.set('search', params.search);
-    query.set('pageSize', (params.pageSize || APP_CONFIG.DEFAULT_PAGE_SIZE).toString());
-    if (params.pageNumber) query.set('pageNumber', params.pageNumber.toString());
-
+    if (params.status && params.status !== 'All') query.append('status', params.status);
+    if (params.search) query.append('search', params.search);
+    if (params.source && params.source !== 'All') query.append('source', params.source);
+    if (params.reason && params.reason !== 'All') query.append('reason', params.reason);
+    if (params.hasEnrollment !== undefined && params.hasEnrollment !== 'All') query.append('hasEnrollment', params.hasEnrollment.toString());
+    if (params.hasMedicine !== undefined && params.hasMedicine !== 'All') query.append('hasMedicine', params.hasMedicine.toString());
+    if (params.pageNumber) query.append('pageNumber', params.pageNumber.toString());
+    if (params.pageSize) query.append('pageSize', params.pageSize.toString());
+    
     const data = await apiClient<any>(`/api/leads?${query.toString()}`);
     
-    // Map API status (integer) to frontend status (string)
     if (data && data.items) {
       data.items = data.items.map((item: any) => ({
         ...item,
-        status: ALL_STATUSES[item.status] || 'New',
+        status: item.status as LeadStatus,
         createdAt: item.createdAt,
         updatedAt: item.updatedAt ?? item.createdAt,
-        deletedAt: null, // API might not return this for list
+        deletedAt: null,
       }));
     }
     
@@ -30,7 +33,7 @@ export const leadsApi = {
     const item = await apiClient<any>(`/api/leads/${id}`);
     return {
       ...item,
-      status: ALL_STATUSES[item.status] || 'New',
+      status: item.status as LeadStatus,
     };
   },
 
@@ -40,21 +43,21 @@ export const leadsApi = {
       body: JSON.stringify({
         name: lead.name,
         phone: lead.phone,
-        status: ALL_STATUSES.indexOf(lead.status),
+        status: lead.status,
         source: lead.source,
         reason: lead.reason
       }),
     });
     return {
       ...data,
-      status: ALL_STATUSES[data.status] || 'New',
+      status: data.status as LeadStatus,
     };
   },
 
   update: async (id: string, lead: Partial<Lead>): Promise<Lead> => {
     const updateData: any = { ...lead };
     if (lead.status) {
-      updateData.status = ALL_STATUSES.indexOf(lead.status);
+      updateData.status = lead.status;
     }
     
     const data = await apiClient<any>(`/api/leads/${id}`, {

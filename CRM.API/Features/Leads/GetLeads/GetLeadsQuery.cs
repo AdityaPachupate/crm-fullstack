@@ -8,6 +8,7 @@ namespace CRM.API.Features.Leads.GetLeads
     public record GetLeadsQuery(
         LeadStatus? Status, 
         string? Source, 
+        string? Reason,
         bool IsTrash = false, 
         int PageNumber = 1, 
         int PageSize = 10,

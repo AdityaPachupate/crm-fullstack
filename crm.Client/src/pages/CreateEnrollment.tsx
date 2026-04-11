@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import PageHeader from '@/components/layout/PageHeader';
-import StatusBadge from '@/components/shared/StatusBadge';
+import { LookupBadge } from '@/components/ui/LookupBadge';
 import { addDays, formatCurrency } from '@/lib/helpers';
 import { BillMedicineItem } from '@/types';
 import { CalendarIcon, Plus, Minus, Trash2 } from 'lucide-react';
@@ -95,7 +95,7 @@ export default function CreateEnrollment() {
             <SelectContent>
               {activeLeads.map(l => (
                 <SelectItem key={l.id} value={l.id}>
-                  <span className="flex items-center gap-2">{l.name} <StatusBadge status={l.status} /></span>
+                  <span className="flex items-center gap-2">{l.name} <LookupBadge category="LeadStatus" code={l.status} /></span>
                 </SelectItem>
               ))}
             </SelectContent>

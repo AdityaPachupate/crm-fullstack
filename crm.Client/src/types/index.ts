@@ -17,6 +17,8 @@ export interface Lead extends SoftDeletable {
   status: LeadStatus;
   source: string;
   reason: string;
+  hasEnrollment?: boolean;
+  hasMedicine?: boolean;
 }
 
 // ─── Follow-up ───
@@ -153,10 +155,14 @@ export interface LeadDetail extends Lead {
 }
 
 export interface LeadsParams {
-  status?: string;
+  status?: LeadStatus | 'All';
   search?: string;
-  pageSize?: number;
+  source?: string | 'All';
+  reason?: string | 'All';
+  hasEnrollment?: boolean | 'All';
+  hasMedicine?: boolean | 'All';
   pageNumber?: number;
+  pageSize?: number;
 }
 
 export interface LeadsResponse {

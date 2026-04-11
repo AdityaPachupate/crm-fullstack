@@ -8,20 +8,22 @@ import PageHeader from '@/components/layout/PageHeader';
 import { LeadStatus } from '@/types';
 import { toast } from 'sonner';
 import { useCreateLead, useLead, useUpdateLead } from '@/hooks/useLeads';
-import { useLookups } from '@/hooks/useLookups';
+import { useLookupRegistry } from '@/hooks/useLookupRegistry';
+import { getAllStaticCodes } from '@/lib/lookup-registry';
 
-import { ALL_STATUSES, LOOKUP_CATEGORIES } from '@/constants';
+import { LOOKUP_CATEGORIES } from '@/constants';
 
 export default function LeadForm({ editId }: { editId?: string }) {
   const navigate = useNavigate();
   const { data: existingLead, isLoading: loadingLead } = useLead(editId || '');
-  const { data: lookups = [] } = useLookups();
+  const { dynamicLookups, getLookupMetadata } = useLookupRegistry();
   
   const createMutation = useCreateLead();
   const updateMutation = useUpdateLead();
 
-  const sources = lookups.filter(l => l.category === LOOKUP_CATEGORIES.LEAD_SOURCE && !l.deletedAt);
-  const reasons = lookups.filter(l => l.category === LOOKUP_CATEGORIES.LEAD_REASON && !l.deletedAt);
+  const statuses = getAllStaticCodes('LeadStatus') as LeadStatus[];
+  const sources = dynamicLookups.filter(l => l.category === LOOKUP_CATEGORIES.LEAD_SOURCE && !l.deletedAt);
+  const reasons = dynamicLookups.filter(l => l.category === LOOKUP_CATEGORIES.LEAD_REASON && !l.deletedAt);
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -71,11 +73,11 @@ export default function LeadForm({ editId }: { editId?: string }) {
     }
   };
 
-  if (editId && loadingLead) return <div className="p-8 text-center text-muted-foreground">Loading lead...</div>;
+  if (editId && loadingLead) return <div className="p-8 text-center text-muted-foreground">Loading patient...</div>;
 
   return (
     <div className="flex flex-col">
-      <PageHeader title={editId ? 'Edit Lead' : 'New Lead'} back />
+      <PageHeader title={editId ? 'Edit Patient' : 'New Patient'} back />
       <div className="space-y-5 p-5">
         <div>
           <Label className="text-xs font-medium text-muted-foreground">Full Name</Label>
@@ -91,7 +93,7 @@ export default function LeadForm({ editId }: { editId?: string }) {
           <Label className="text-xs font-medium text-muted-foreground">Status</Label>
           <Select value={status} onValueChange={v => setStatus(v as LeadStatus)}>
             <SelectTrigger className="mt-1.5 h-10 rounded-lg"><SelectValue /></SelectTrigger>
-            <SelectContent>{ALL_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+            <SelectContent>{statuses.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
           </Select>
         </div>
         <div>
@@ -113,7 +115,7 @@ export default function LeadForm({ editId }: { editId?: string }) {
       </div>
       <div className="sticky bottom-0 border-t bg-card/95 backdrop-blur-sm p-4">
         <Button className="w-full rounded-full h-11" onClick={handleSubmit} disabled={saving}>
-          {saving ? 'Saving...' : (editId ? 'Update Lead' : 'Save Lead')}
+          {saving ? 'Saving...' : (editId ? 'Update Patient' : 'Save Patient')}
         </Button>
       </div>
     </div>

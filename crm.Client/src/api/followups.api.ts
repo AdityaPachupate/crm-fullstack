@@ -40,7 +40,7 @@ export const followupsApi = {
       method: 'POST',
       body: JSON.stringify({
         ...request,
-        priority: PRIORITIES.indexOf(request.priority),
+        priority: request.priority,
       }),
     });
   },
@@ -50,9 +50,9 @@ export const followupsApi = {
       method: 'PUT',
       body: JSON.stringify({
         ...request,
-        outcome: OUTCOMES.indexOf(request.outcome),
-        newLeadStatus: request.newLeadStatus ? ALL_STATUSES.indexOf(request.newLeadStatus) : null,
-        nextFollowUpPriority: request.nextFollowUpPriority ? PRIORITIES.indexOf(request.nextFollowUpPriority) : null,
+        outcome: request.outcome,
+        newLeadStatus: request.newLeadStatus ?? null,
+        nextFollowUpPriority: request.nextFollowUpPriority ?? null,
       }),
     });
   },
