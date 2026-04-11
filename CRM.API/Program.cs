@@ -63,6 +63,22 @@ if (string.IsNullOrEmpty(connectionString))
 {
     Log.Fatal("CRITICAL: Connection string 'NeonProductionDb' or 'DATABASE_URL' is missing! Check environment variables.");
 }
+else
+{
+    // Ensure the connection string has reasonable timeouts and SSL settings for Render/Alpine
+    if (!connectionString.Contains("Trust Server Certificate", StringComparison.OrdinalIgnoreCase))
+    {
+        connectionString += ";Trust Server Certificate=true";
+    }
+    if (!connectionString.Contains("Connect Timeout", StringComparison.OrdinalIgnoreCase))
+    {
+        connectionString += ";Connect Timeout=60";
+    }
+    if (!connectionString.Contains("Command Timeout", StringComparison.OrdinalIgnoreCase))
+    {
+        connectionString += ";Command Timeout=60";
+    }
+}
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
@@ -115,7 +131,16 @@ if (app.Environment.IsDevelopment())
 }
 if (!string.IsNullOrEmpty(connectionString))
 {
-    app.MigrateDatabase();
+    try 
+    {
+        Log.Information("Starting database migration...");
+        app.MigrateDatabase();
+        Log.Information("Database migration completed successfully.");
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "FATAL: Database migration failed. The application will continue to start, but DB features may fail.");
+    }
 }
 else
 {
