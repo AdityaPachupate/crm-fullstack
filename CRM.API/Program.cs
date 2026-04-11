@@ -65,18 +65,25 @@ if (string.IsNullOrEmpty(connectionString))
 }
 else
 {
-    // Ensure the connection string has reasonable timeouts and SSL settings for Render/Alpine
-    if (!connectionString.Contains("Trust Server Certificate", StringComparison.OrdinalIgnoreCase))
+    // Use NpgsqlConnectionStringBuilder to safely append parameters
+    try
     {
-        connectionString += ";Trust Server Certificate=true";
+        var connBuilder = new Npgsql.NpgsqlConnectionStringBuilder(connectionString);
+        
+        if (!connectionString.Contains("Trust Server Certificate", StringComparison.OrdinalIgnoreCase))
+            connBuilder.TrustServerCertificate = true;
+            
+        if (!connectionString.Contains("Timeout", StringComparison.OrdinalIgnoreCase))
+            connBuilder.Timeout = 60;
+            
+        if (!connectionString.Contains("Command Timeout", StringComparison.OrdinalIgnoreCase))
+            connBuilder.CommandTimeout = 60;
+
+        connectionString = connBuilder.ToString();
     }
-    if (!connectionString.Contains("Connect Timeout", StringComparison.OrdinalIgnoreCase))
+    catch (Exception ex)
     {
-        connectionString += ";Connect Timeout=60";
-    }
-    if (!connectionString.Contains("Command Timeout", StringComparison.OrdinalIgnoreCase))
-    {
-        connectionString += ";Command Timeout=60";
+        Log.Warning(ex, "Could not use NpgsqlConnectionStringBuilder to sanitize connection string. Using raw value.");
     }
 }
 
