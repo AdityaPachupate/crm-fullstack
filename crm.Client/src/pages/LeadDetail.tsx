@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useMemo, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,10 +8,17 @@ import { LookupBadge } from '@/components/ui/LookupBadge';
 import PageHeader from '@/components/layout/PageHeader';
 import { maskPhone, relativeDate, formatCurrency, todayStr } from '@/lib/helpers';
 import { Edit, CheckCircle, Pill, Phone, Globe, FileText, Calendar, Trash2, CheckCircle2 } from 'lucide-react';
-import { useLead } from '@/hooks/useLeads';
-import { BillDto, FollowUpDto, EnrollmentDto, RejoinRecordDto, LeadDetail as LeadDetailType } from '@/types';
+import { useLead, useUpdateLead, useDeleteLead } from '@/hooks/useLeads';
+import { BillDto, FollowUpDto, EnrollmentDto, RejoinRecordDto, LeadDetail as LeadDetailType, LeadStatus } from '@/types';
 import { useFollowUps } from '@/hooks/useFollowUps';
 import { CompleteFollowUpDialog } from '@/components/leads/CompleteFollowUpDialog';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
+import { getAllStaticCodes } from '@/lib/lookup-registry';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,6 +33,7 @@ import {
 
 
 export default function LeadDetail() {
+  const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { data: lead, isLoading: loading, error } = useLead(id || '');
   const [activeTab, setActiveTab] = useState('overview');
@@ -34,6 +42,10 @@ export default function LeadDetail() {
   const { completeFollowUp, deleteFollowUp, isCompleting, isDeleting } = useFollowUps();
   const [completingFollowUpId, setCompletingFollowUpId] = useState<string | null>(null);
   const [deletingFollowUpId, setDeletingFollowUpId] = useState<string | null>(null);
+
+  // Lead Actions State
+  const deleteLeadMutation = useDeleteLead();
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const leadFollowUps = useMemo(
     () => (lead?.followUps ?? []).slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
@@ -50,6 +62,111 @@ export default function LeadDetail() {
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
     [leadEnrollments, leadRejoins]
   );
+
+  const totalBalance = useMemo(
+    () => leadBills.reduce((sum, b) => sum + b.pendingAmount, 0),
+    [leadBills]
+  );
+
+  const nextFollowUp = useMemo(() => {
+    const pending = (lead?.followUps ?? [])
+      .filter(f => !f.completedAt && new Date(f.followUpDate).getTime() >= new Date().setHours(0,0,0,0))
+      .sort((a, b) => new Date(a.followUpDate).getTime() - new Date(b.followUpDate).getTime());
+    return pending[0] || null;
+  }, [lead?.followUps]);
+
+  const timelineEvents = useMemo(() => {
+    const events: any[] = [];
+    
+    // 1. Lead Created
+    if (lead) {
+      events.push({
+        type: 'joining',
+        date: lead.createdAt,
+        title: 'Patient Joined',
+        description: `Added via ${lead.source}`,
+        icon: Globe,
+        color: 'text-blue-500'
+      });
+    }
+
+    // 2. Follow-ups
+    (lead?.followUps ?? []).forEach(f => {
+      // Created
+      events.push({
+        type: 'followup_created',
+        date: f.createdAt,
+        title: 'Follow-up Scheduled',
+        description: `Set for ${new Date(f.followUpDate).toLocaleDateString()}`,
+        icon: Calendar,
+        color: 'text-indigo-500'
+      });
+      // Completed
+      if (f.completedAt) {
+        events.push({
+          type: 'followup_completed',
+          date: f.completedAt,
+          title: 'Follow-up Completed',
+          description: f.notes || 'Interaction finished',
+          icon: CheckCircle2,
+          color: 'text-emerald-500'
+        });
+      }
+    });
+
+    // 3. Enrollments & Bills
+    leadEnrollments.forEach(e => {
+      events.push({
+        type: 'enrollment',
+        date: e.createdAt,
+        title: 'Enrolled in Package',
+        description: e.packageName,
+        icon: CheckCircle,
+        color: 'text-status-converted'
+      });
+      
+      events.push({
+        type: 'payment',
+        date: e.bill.createdAt,
+        title: 'Payment Record Created',
+        description: `Total: ${formatCurrency(e.bill.packageAmount + e.bill.medicineBillingAmount)}`,
+        icon: FileText,
+        color: 'text-slate-600'
+      });
+    });
+
+    // 4. Rejoins
+    leadRejoins.forEach(r => {
+      events.push({
+        type: 'rejoin',
+        date: r.startDate,
+        title: 'Patient Rejoined',
+        description: `Restarted with ${r.packageName}`,
+        icon: Plus,
+        color: 'text-emerald-600'
+      });
+      
+      if (r.bill) {
+        events.push({
+          type: 'payment',
+          date: r.bill.createdAt,
+          title: 'Payment Record Created (Rejoin)',
+          description: `Total: ${formatCurrency(r.bill.packageAmount + r.bill.medicineBillingAmount)}`,
+          icon: FileText,
+          color: 'text-slate-600'
+        });
+      }
+    });
+
+    return events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [lead, leadEnrollments]);
+
+  const updateLeadMutation = useUpdateLead();
+  const allStatuses = getAllStaticCodes('LeadStatus') as LeadStatus[];
+
+  const handleStatusChange = (newStatus: LeadStatus) => {
+    updateLeadMutation.mutate({ id: id!, lead: { status: newStatus } });
+  };
 
   const selectedFollowUp = useMemo(() => 
     leadFollowUps.find(f => f.id === completingFollowUpId),
@@ -85,21 +202,57 @@ export default function LeadDetail() {
   return (
     <div>
       <PageHeader
-        title={lead.name}
+        title="Patient Profile"
         back
-        right={<Link to={`/leads/${id}/edit`}><Button variant="ghost" size="icon" className="h-8 w-8 rounded-full"><Edit className="h-4 w-4" /></Button></Link>}
+        right={
+          <div className="flex items-center gap-1">
+            <Link to={`/leads/${id}/edit`}>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                <Edit className="h-4 w-4" />
+              </Button>
+            </Link>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 rounded-full text-destructive hover:bg-destructive/10"
+              onClick={() => setIsDeleteDialogOpen(true)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        }
       />
       <div className="p-5">
+        <Link 
+          to="#" 
+          onClick={(e) => { e.preventDefault(); openOverview(); }}
+          className="inline-block mb-2 text-2xl font-bold tracking-tight text-slate-900 transition-colors hover:text-indigo-600"
+        >
+          {lead.name}
+        </Link>
         <div className="mb-5 flex items-center gap-3 flex-wrap">
-          <LookupBadge category="LeadStatus" code={lead.status} />
-          <Button
-            variant={activeTab === 'overview' ? 'default' : 'ghost'}
-            size="sm"
-            className="h-6 rounded-full px-2.5 text-[11px]"
-            onClick={openOverview}
-          >
-            Overview
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="transition-transform active:scale-95 outline-none">
+                <LookupBadge category="LeadStatus" code={lead.status} />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-40 p-1">
+              {allStatuses.map(s => (
+                <DropdownMenuItem 
+                  key={s} 
+                  onClick={() => handleStatusChange(s)}
+                  className={cn(
+                    "rounded-lg text-xs font-medium py-2",
+                    lead.status === s ? "bg-accent" : ""
+                  )}
+                >
+                  {s}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           {hasEnrollment && (
             <span className="inline-flex items-center gap-1.5 text-xs font-medium text-status-converted">
               <CheckCircle className="h-3 w-3" /> Enrolled
@@ -112,21 +265,45 @@ export default function LeadDetail() {
           )}
         </div>
 
+        {nextFollowUp && (
+          <div className="mb-6 p-3 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
+                <Calendar className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">Next Action</p>
+                <p className="text-xs font-bold text-indigo-900">Follow-up: {new Date(nextFollowUp.followUpDate).toLocaleDateString()}</p>
+              </div>
+            </div>
+            <Button 
+              size="sm" 
+              variant="ghost" 
+              className="h-7 text-[10px] font-bold text-indigo-600 hover:bg-indigo-100/50"
+              onClick={() => setActiveTab('followups')}
+            >
+              View Detials
+            </Button>
+          </div>
+        )}
+
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="w-full bg-muted h-9">
-            <TabsTrigger value="followups" className="flex-1 px-1.5 text-[11px]">Followups</TabsTrigger>
-            <TabsTrigger value="enrollments" className="flex-1 px-1.5 text-[11px]">Enroll</TabsTrigger>
-            <TabsTrigger value="bills" className="flex-1 px-1.5 text-[11px]">Bills</TabsTrigger>
-            <TabsTrigger value="rejoins" className="flex-1 px-1.5 text-[11px]">Rejoins</TabsTrigger>
+          <TabsList className="w-full bg-muted h-9 overflow-x-auto no-scrollbar justify-start">
+            <TabsTrigger value="overview" className="flex-1 min-w-[70px] px-1.5 text-[11px]">Overview</TabsTrigger>
+            <TabsTrigger value="followups" className="flex-1 min-w-[70px] px-1.5 text-[11px]">Followups</TabsTrigger>
+            <TabsTrigger value="enrollments" className="flex-1 min-w-[70px] px-1.5 text-[11px]">Enrollments</TabsTrigger>
+            <TabsTrigger value="bills" className="flex-1 min-w-[70px] px-1.5 text-[11px]">Bills</TabsTrigger>
+            <TabsTrigger value="rejoins" className="flex-1 min-w-[70px] px-1.5 text-[11px]">Rejoins</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="mt-5">
+          <TabsContent value="overview" className="mt-5 space-y-8">
             <Card className="border shadow-none">
               <CardContent className="p-0 divide-y">
                 {[
                   { icon: Phone, label: 'Phone', value: maskPhone(lead.phone) },
                   { icon: Globe, label: 'Source', value: lead.source },
                   { icon: FileText, label: 'Reason', value: lead.reason },
+                  { icon: CheckCircle2, label: 'Total Due', value: totalBalance > 0 ? formatCurrency(totalBalance) : 'Settled', isBalance: true },
                   { icon: Calendar, label: 'Created', value: relativeDate(lead.createdAt) },
                   { icon: Calendar, label: 'Updated', value: lead.updatedAt ? relativeDate(lead.updatedAt) : 'Never' },
                 ].map(item => (
@@ -139,6 +316,13 @@ export default function LeadDetail() {
                       <a href={`tel:${lead.phone}`} className="text-sm font-medium text-primary hover:underline">
                         {item.value}
                       </a>
+                    ) : item.isBalance ? (
+                      <span className={cn(
+                        "text-sm font-bold",
+                        totalBalance > 0 ? "text-destructive" : "text-emerald-600"
+                      )}>
+                        {item.value}
+                      </span>
                     ) : (
                       <span className="text-sm font-medium">{item.value}</span>
                     )}
@@ -146,6 +330,35 @@ export default function LeadDetail() {
                 ))}
               </CardContent>
             </Card>
+
+            <div className="space-y-6 relative pb-8">
+              <h3 className="text-sm font-bold text-slate-900 border-b pb-2 flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-indigo-500" />
+                Interactions Timeline
+              </h3>
+              <div className="absolute left-[21px] top-12 bottom-6 w-0.5 bg-slate-100" />
+              <div className="space-y-6">
+                {timelineEvents.map((event, idx) => (
+                  <div key={idx} className="relative flex gap-4 pr-2">
+                    <div className={cn(
+                      "relative z-10 h-11 w-11 rounded-full flex items-center justify-center border-4 border-background shadow-sm",
+                      event.color === 'text-emerald-500' ? "bg-emerald-50 text-emerald-600" :
+                      event.color === 'text-blue-500' ? "bg-blue-50 text-blue-600" :
+                      event.color === 'text-emerald-600' ? "bg-emerald-50 text-emerald-700" :
+                      "bg-slate-50 text-indigo-600"
+                    )}>
+                      <event.icon size={18} />
+                    </div>
+                    <div className="flex-1 pt-0.5 min-w-0">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{relativeDate(event.date)}</span>
+                      <h4 className="text-[15px] font-bold text-slate-800 leading-tight mt-0.5 truncate">{event.title}</h4>
+                      <p className="text-xs text-slate-500 mt-1 break-words line-clamp-3 group-hover:line-clamp-none transition-all">{event.description}</p>
+                    </div>
+                  </div>
+                ))}
+                {timelineEvents.length === 0 && <p className="text-center py-10 text-sm text-slate-400 font-medium">No activity yet</p>}
+              </div>
+            </div>
           </TabsContent>
 
           <TabsContent value="followups" className="mt-5 space-y-2">
@@ -283,6 +496,28 @@ export default function LeadDetail() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isDeleting ? 'Deleting...' : 'Move to Trash'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Move Patient to Trash?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will move <strong>{lead.name}</strong> and all related records to the trash. You can restore them later from the Trash section.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={async () => {
+                await deleteLeadMutation.mutateAsync(id!);
+                navigate('/leads');
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteLeadMutation.isPending ? 'Moving to Trash...' : 'Move to Trash'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
