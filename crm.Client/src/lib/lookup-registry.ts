@@ -47,9 +47,9 @@ const REGISTRY: Record<StaticLookupCategory, Record<string, LookupMetadata>> = {
     Disconnected: { label: 'Disconnected', color: 'text-slate-500', bgColor: 'bg-slate-50', icon: PhoneOff },
   },
   FollowUpPriority: {
-    Low: { label: 'Low', color: 'text-slate-500', bgColor: 'bg-slate-100' },
-    Medium: { label: 'Medium', color: 'text-blue-600', bgColor: 'bg-blue-100' },
-    High: { label: 'High', color: 'text-rose-600', bgColor: 'bg-rose-100', icon: AlertCircle },
+    Low: { label: 'Low', color: 'text-emerald-700', bgColor: 'bg-emerald-50' },
+    Medium: { label: 'Medium', color: 'text-blue-700', bgColor: 'bg-blue-50' },
+    High: { label: 'High', color: 'text-rose-700', bgColor: 'bg-rose-50', icon: AlertCircle },
   }
 };
 

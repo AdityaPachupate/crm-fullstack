@@ -165,7 +165,7 @@ export default function LeadDetail() {
                     </div>
                   </div>
                   
-                  {f.notes && <p className="mt-1.5 whitespace-pre-line text-[11px] text-slate-600 italic bg-slate-50 p-2 rounded">"{f.notes}"</p>}
+                  {f.notes && <p className="mt-1.5 whitespace-pre-line break-words text-[11px] text-slate-600 italic bg-slate-50 p-2 rounded">{f.notes}</p>}
                   
                   <div className="mt-3 pt-2 border-t flex items-center justify-between">
                     <span className={cn(

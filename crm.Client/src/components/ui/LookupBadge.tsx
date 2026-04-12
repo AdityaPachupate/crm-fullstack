@@ -17,8 +17,10 @@ export function LookupBadge({ category, code, className, showIcon = true }: Look
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-tight whitespace-nowrap bg-slate-100 text-slate-500 border border-slate-200/50 transition-all duration-200",
-        "hover:bg-slate-200/80",
+        "inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-tight whitespace-nowrap border border-current/10 transition-all duration-200",
+        meta.color,
+        meta.bgColor,
+        "hover:opacity-80",
         className
       )}
     >
