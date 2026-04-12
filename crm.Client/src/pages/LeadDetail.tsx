@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { LookupBadge } from '@/components/ui/LookupBadge';
 import PageHeader from '@/components/layout/PageHeader';
 import { maskPhone, relativeDate, formatCurrency, todayStr } from '@/lib/helpers';
-import { Edit, CheckCircle, Pill, Phone, Globe, FileText, Calendar, Trash2, CheckCircle2 } from 'lucide-react';
+import { Edit, CheckCircle, Pill, Phone, Globe, FileText, Calendar, Trash2, CheckCircle2, Plus } from 'lucide-react';
 import { useLead, useUpdateLead, useDeleteLead } from '@/hooks/useLeads';
 import { BillDto, FollowUpDto, EnrollmentDto, RejoinRecordDto, LeadDetail as LeadDetailType, LeadStatus } from '@/types';
 import { useFollowUps } from '@/hooks/useFollowUps';
@@ -266,23 +266,21 @@ export default function LeadDetail() {
         </div>
 
         {nextFollowUp && (
-          <div className="mb-6 p-3 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
-                <Calendar className="h-4 w-4" />
-              </div>
+          <div className="mb-6 p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between shadow-sm">
+            <div className="flex items-center gap-4">
+              <Calendar className="h-5 w-5 text-slate-900" />
               <div>
-                <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">Next Action</p>
-                <p className="text-xs font-bold text-indigo-900">Follow-up: {new Date(nextFollowUp.followUpDate).toLocaleDateString()}</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Next Action</p>
+                <p className="text-xs font-bold text-slate-900">Follow-up: {new Date(nextFollowUp.followUpDate).toLocaleDateString()}</p>
               </div>
             </div>
             <Button 
               size="sm" 
               variant="ghost" 
-              className="h-7 text-[10px] font-bold text-indigo-600 hover:bg-indigo-100/50"
+              className="h-7 text-[10px] font-bold text-slate-600 hover:bg-slate-200/50"
               onClick={() => setActiveTab('followups')}
             >
-              View Detials
+              View Details
             </Button>
           </div>
         )}
