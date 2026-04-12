@@ -12,13 +12,23 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { maskPhone, relativeDate } from '@/lib/helpers';
-import { LeadStatus } from '@/types';
-import { ChevronDown, Plus, Search, CheckCircle2, Stethoscope, Phone, ChevronRight } from 'lucide-react';
-import { useLeads } from '@/hooks/useLeads';
+import { ChevronDown, Plus, Search, CheckCircle2, Stethoscope, Phone, ChevronRight, MoreVertical, Pencil, Trash2, X } from 'lucide-react';
+import { useLeads, useDeleteLead } from '@/hooks/useLeads';
 import { useLeadsStore } from '@/store/useLeadsStore';
 import { usePrefetch } from '@/hooks/usePrefetch';
 import { LeadFilters } from '@/components/leads/LeadFilters';
 import { LookupBadge } from '@/components/ui/LookupBadge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Lead, LeadStatus } from '@/types';
 
 import { APP_CONFIG } from '@/constants';
 import { getAllStaticCodes } from '@/lib/lookup-registry';
@@ -29,6 +39,40 @@ export default function LeadsList() {
   const { search, setSearch, statusFilter, setStatusFilter } = useLeadsStore();
   const { data, isLoading: loading, error } = useLeads({ status: statusFilter, search });
   const { prefetchLead } = usePrefetch();
+  const deleteMutation = useDeleteLead();
+  const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
+  
+  // Debounce search
+  const [localSearch, setLocalSearch] = useState(search);
+  
+  useEffect(() => {
+    // If localSearch is exactly same as store search, do nothing
+    if (localSearch === search) return;
+
+    // Instant clear if empty
+    if (localSearch === '') {
+      setSearch('');
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setSearch(localSearch);
+    }, 500); // 500ms debounce
+    
+    return () => clearTimeout(timer);
+  }, [localSearch, search, setSearch]);
+
+  const handleClearSearch = () => {
+    setLocalSearch('');
+    setSearch('');
+  };
+
+  // Sync back if search is reset from outside (e.g. Reset Filters)
+  useEffect(() => {
+    if (search === '') {
+      setLocalSearch('');
+    }
+  }, [search]);
 
   const leadStatuses = getAllStaticCodes('LeadStatus') as LeadStatus[];
   const leads = data?.items || [];
@@ -73,10 +117,19 @@ export default function LeadsList() {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input 
               placeholder="Search by name or phone" 
-              value={search} 
-              onChange={e => setSearch(e.target.value)} 
-              className="pl-9 h-9 text-sm bg-muted border-0 rounded-lg" 
+              value={localSearch} 
+              onChange={e => setLocalSearch(e.target.value)} 
+              className="pl-9 pr-8 h-9 text-sm bg-muted border-0 rounded-lg" 
             />
+            {localSearch && (
+              <button 
+                onClick={handleClearSearch}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-muted-foreground/10 rounded-full transition-colors"
+                title="Clear search"
+              >
+                <X className="h-3.5 w-3.5 text-muted-foreground" />
+              </button>
+            )}
           </div>
           <LeadFilters />
         </div>
@@ -134,9 +187,12 @@ export default function LeadsList() {
       </div>
 
       {/* List */}
-      <div className="space-y-2 px-3 py-2">
+      <div className="space-y-3 px-3 py-4">
         {loading ? (
-          <p className="py-16 text-center text-sm text-muted-foreground">Loading patients...</p>
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+             <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+             <p className="text-sm text-muted-foreground">Loading patients...</p>
+          </div>
         ) : error ? (
           <p className="py-16 text-center text-sm text-destructive">{(error as Error).message}</p>
         ) : leads.length === 0 ? (
@@ -147,46 +203,83 @@ export default function LeadsList() {
               key={lead.id} 
               onClick={() => navigate(`/leads/${lead.id}`)}
               onMouseEnter={() => prefetchLead(lead.id)}
-              className="block group bg-card border rounded-xl py-2.5 px-4 hover:shadow-md hover:border-indigo-100 transition-all duration-300 cursor-pointer"
+              className="group relative bg-card border rounded-2xl p-4 hover:shadow-lg hover:border-indigo-200 transition-all duration-300 cursor-pointer overflow-hidden"
             >
-              <div className="flex justify-between items-start">
-                <div className="space-y-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="font-semibold text-slate-900 truncate">
-                      <span className="mr-2 font-medium">{index + 1}.</span>
+              <div className="grid grid-cols-[1fr_auto] gap-4 items-start">
+                {/* 1. Main Info */}
+                <div className="min-w-0 space-y-2">
+                  <div className="flex flex-col gap-1">
+                    <h3 className="font-bold text-[16px] text-slate-900 truncate leading-tight">
+                      <span className="text-slate-400 font-medium mr-2">{index + 1}.</span>
                       {lead.name}
                     </h3>
-                    <LookupBadge category="LeadStatus" code={lead.status} />
+                    <div className="flex gap-1">
+                       {lead.hasEnrollment && <CheckCircle2 size={12} className="text-emerald-500 fill-emerald-50/50" />}
+                       {lead.hasMedicine && <Stethoscope size={12} className="text-blue-500 fill-blue-50/50" />}
+                    </div>
                   </div>
-                  <p className="text-[11px] text-slate-500 line-clamp-1">
-                    {lead.source && <span className="font-medium">{lead.source}, </span>}
-                    {lead.reason}
-                  </p>
+
+                  <div className="flex flex-col gap-0.5">
+                    <p className="text-[11px] text-slate-500 truncate leading-relaxed">
+                      {lead.source && <span className="font-semibold text-slate-700">{lead.source}</span>}
+                      {lead.source && lead.reason && <span className="mx-1 opacity-30">•</span>}
+                      {lead.reason && <span className="italic">{lead.reason}</span>}
+                    </p>
+                    <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-medium">
+                       <span>Added {relativeDate(lead.createdAt)}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex flex-col items-end gap-1.5 shrink-0">
-                  <a 
-                    href={`tel:${lead.phone}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                    }}
-                    className="z-10 text-sm text-primary font-bold hover:underline"
-                  >
-                    {lead.phone}
-                  </a>
-                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-tighter mr-2">
-                    {new Date(lead.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                  </span>
+
+                {/* 3. Action Group */}
+                <div className="flex flex-col items-end justify-between h-full min-h-[60px]">
+                  <div className="flex items-center gap-3">
+                    <a 
+                      href={`tel:${lead.phone}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
+                      className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors active:scale-95"
+                      title="Call Patient"
+                    >
+                      <Phone className="h-4 w-4 fill-current" />
+                    </a>
+                    
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-slate-100 transition-colors text-slate-700">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-44 p-1 rounded-xl shadow-xl border-slate-200">
+                        <DropdownMenuItem 
+                          className="rounded-lg gap-2 py-2"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/leads/${lead.id}/edit`);
+                          }}
+                        >
+                          <Pencil className="h-4 w-4 text-slate-500" />
+                          <span className="font-medium text-slate-700">Edit Patient</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator className="my-1" />
+                        <DropdownMenuItem 
+                          className="rounded-lg gap-2 py-2 text-destructive focus:text-destructive focus:bg-destructive/5"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setLeadToDelete(lead);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span className="font-medium">Move to Trash</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
+                  <LookupBadge category="LeadStatus" code={lead.status} />
                 </div>
               </div>
-              
-              {(lead.hasEnrollment || lead.hasMedicine) && (
-                <div className="flex items-center justify-between pt-2 mt-1 border-t border-slate-50">
-                  <div className="flex gap-1.5">
-                    {lead.hasEnrollment && <div className="p-1 bg-emerald-50 text-emerald-600 rounded" title="Has Enrollment"><CheckCircle2 size={14} /></div>}
-                    {lead.hasMedicine && <div className="p-1 bg-blue-50 text-blue-600 rounded" title="Has Medicine"><Stethoscope size={14} /></div>}
-                  </div>
-                </div>
-              )}
             </div>
           ))
         )}
@@ -197,6 +290,31 @@ export default function LeadsList() {
           <Plus className="h-5 w-5" />
         </Button>
       </Link>
+
+      <AlertDialog open={!!leadToDelete} onOpenChange={(open) => !open && setLeadToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Move to Trash?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will move <strong>{leadToDelete?.name}</strong> and all their related data (bills, enrollments, follow-ups) to the trash. You can restore them later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (leadToDelete) {
+                  await deleteMutation.mutateAsync(leadToDelete.id);
+                  setLeadToDelete(null);
+                }
+              }}
+            >
+              Move to Trash
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

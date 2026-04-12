@@ -26,6 +26,15 @@ namespace CRM.API.Features.Leads.GetLeads
                 );
             }
 
+            // Search
+            if (!string.IsNullOrWhiteSpace(query.Search))
+            {
+                var searchTerm = $"%{query.Search}%";
+                queryableLeads = queryableLeads.Where(l => 
+                    EF.Functions.ILike(l.Name, searchTerm) || 
+                    EF.Functions.ILike(l.Phone, searchTerm));
+            }
+
             // Standard Filters
             if (query.Status.HasValue)
             {
@@ -34,12 +43,12 @@ namespace CRM.API.Features.Leads.GetLeads
 
             if (!string.IsNullOrEmpty(query.Source))
             {
-                queryableLeads = queryableLeads.Where(l => l.Source == query.Source);
+                queryableLeads = queryableLeads.Where(l => EF.Functions.ILike(l.Source, query.Source));
             }
 
             if (!string.IsNullOrEmpty(query.Reason))
             {
-                queryableLeads = queryableLeads.Where(l => l.Reason == query.Reason);
+                queryableLeads = queryableLeads.Where(l => EF.Functions.ILike(l.Reason, query.Reason));
             }
 
             // Analytics Filters

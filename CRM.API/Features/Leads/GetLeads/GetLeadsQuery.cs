@@ -7,6 +7,7 @@ namespace CRM.API.Features.Leads.GetLeads
 {
     public record GetLeadsQuery(
         LeadStatus? Status, 
+        string? Search,
         string? Source, 
         string? Reason,
         bool IsTrash = false, 

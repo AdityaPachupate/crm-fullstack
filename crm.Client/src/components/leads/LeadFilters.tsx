@@ -80,7 +80,7 @@ export function LeadFilters() {
               <SelectContent>
                 <SelectItem value="all">All Sources</SelectItem>
                 {sources.map(s => (
-                  <SelectItem key={s.id} value={s.displayName}>{s.displayName}</SelectItem>
+                  <SelectItem key={s.id} value={s.code}>{s.displayName}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -99,7 +99,7 @@ export function LeadFilters() {
               <SelectContent>
                 <SelectItem value="all">All Reasons</SelectItem>
                 {reasons.map(r => (
-                  <SelectItem key={r.id} value={r.displayName}>{r.displayName}</SelectItem>
+                  <SelectItem key={r.id} value={r.code}>{r.displayName}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
