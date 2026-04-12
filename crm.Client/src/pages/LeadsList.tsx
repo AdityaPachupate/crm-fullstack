@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { maskPhone, relativeDate } from '@/lib/helpers';
-import { ChevronDown, Plus, Search, CheckCircle2, Stethoscope, Phone, ChevronRight, MoreVertical, Pencil, Trash2, X } from 'lucide-react';
+import { ChevronDown, Plus, Search, CheckCircle2, Stethoscope, Phone, ChevronRight, MoreVertical, Pencil, Trash2, X, UserPlus } from 'lucide-react';
 import { useLeads, useDeleteLead } from '@/hooks/useLeads';
 import { useLeadsStore } from '@/store/useLeadsStore';
 import { usePrefetch } from '@/hooks/usePrefetch';
@@ -286,8 +286,8 @@ export default function LeadsList() {
       </div>
 
       <Link to="/leads/new" className="fixed bottom-24 right-4 z-50">
-        <Button className="h-14 w-14 rounded-2xl shadow-lg">
-          <Plus className="h-5 w-5" />
+        <Button className="h-12 w-12 rounded-2xl shadow-lg">
+          <UserPlus className="h-5 w-5" strokeWidth={2.5} />
         </Button>
       </Link>
 
