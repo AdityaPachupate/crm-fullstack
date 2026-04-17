@@ -95,6 +95,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     }
 });
 
+builder.Services.AddHttpClient();
 builder.Services.AddScoped<INotificationService, WhatsAppNotificationService>();
 builder.Services.AddScoped<IBillRepository, BillRepository>();
 
@@ -108,6 +109,7 @@ builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
 
 builder.Host.UseSerilog();
 builder.Services.AddHostedService<TrashCleanupJob>();
+builder.Services.AddHostedService<FollowUpReminderJob>();
 var healthChecks = builder.Services.AddHealthChecks();
 if (!string.IsNullOrEmpty(connectionString))
 {

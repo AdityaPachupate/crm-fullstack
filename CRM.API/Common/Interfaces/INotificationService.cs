@@ -5,5 +5,6 @@ namespace CRM.API.Common.Interfaces
         Task SendFollowUpCreatedAsync(Guid leadId, DateOnly date);
         Task SendEnrollmentConfirmedAsync(Guid leadId, string packageName, DateOnly startDate);
         Task SendRejoinConfirmedAsync(Guid leadId, string packageName, DateOnly startDate);
+        Task SendMessageAsync(string phoneNumber, string message);
     }
 }

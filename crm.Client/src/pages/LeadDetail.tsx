@@ -8,10 +8,13 @@ import { LookupBadge } from '@/components/ui/LookupBadge';
 import PageHeader from '@/components/layout/PageHeader';
 import { maskPhone, relativeDate, formatCurrency, todayStr } from '@/lib/helpers';
 import { Edit, CheckCircle, Pill, Phone, Globe, FileText, Calendar, Trash2, CheckCircle2, Plus } from 'lucide-react';
+import { toast } from 'sonner';
 import { useLead, useUpdateLead, useDeleteLead } from '@/hooks/useLeads';
 import { BillDto, FollowUpDto, EnrollmentDto, RejoinRecordDto, LeadDetail as LeadDetailType, LeadStatus } from '@/types';
 import { useFollowUps } from '@/hooks/useFollowUps';
+import { useEnrollments } from '@/hooks/useEnrollments';
 import { CompleteFollowUpDialog } from '@/components/leads/CompleteFollowUpDialog';
+import { AddEnrollmentDialog } from '@/components/leads/AddEnrollmentDialog';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -42,6 +45,12 @@ export default function LeadDetail() {
   const { completeFollowUp, deleteFollowUp, isCompleting, isDeleting } = useFollowUps();
   const [completingFollowUpId, setCompletingFollowUpId] = useState<string | null>(null);
   const [deletingFollowUpId, setDeletingFollowUpId] = useState<string | null>(null);
+
+  // Enrollment Actions State
+  const { deleteEnrollment } = useEnrollments();
+  const [isEnrollmentDialogOpen, setIsEnrollmentDialogOpen] = useState(false);
+  const [editingEnrollment, setEditingEnrollment] = useState<EnrollmentDto | undefined>(undefined);
+  const [deletingEnrollmentId, setDeletingEnrollmentId] = useState<string | null>(null);
 
   // Lead Actions State
   const deleteLeadMutation = useDeleteLead();
@@ -193,6 +202,28 @@ export default function LeadDetail() {
       onSuccess: () => setDeletingFollowUpId(null)
     });
   };
+
+  const handleOpenAddEnrollment = () => {
+    setEditingEnrollment(undefined);
+    setIsEnrollmentDialogOpen(true);
+  };
+
+  const handleEditEnrollment = (enrollment: any) => {
+    setEditingEnrollment(enrollment);
+    setIsEnrollmentDialogOpen(true);
+  };
+
+  const handleDeleteEnrollment = async () => {
+    if (!deletingEnrollmentId) return;
+    try {
+      await deleteEnrollment.mutateAsync(deletingEnrollmentId);
+      toast.success("Enrollment deleted successfully");
+      setDeletingEnrollmentId(null);
+    } catch (error) {
+      toast.error("Failed to delete enrollment");
+    }
+  };
+
 
   const openOverview = () => {
     setActiveTab('overview');
@@ -348,7 +379,7 @@ export default function LeadDetail() {
                       <event.icon size={18} />
                     </div>
                     <div className="flex-1 pt-0.5 min-w-0">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{relativeDate(event.date)}</span>
+                      <span className="text-[10px] font-bold text-slate-400 tracking-widest">{relativeDate(event.date)}</span>
                       <h4 className="text-[15px] font-bold text-slate-800 leading-tight mt-0.5 truncate">{event.title}</h4>
                       <p className="text-xs text-slate-500 mt-1 break-words line-clamp-3 group-hover:line-clamp-none transition-all">{event.description}</p>
                     </div>
@@ -420,18 +451,62 @@ export default function LeadDetail() {
           </TabsContent>
 
           <TabsContent value="enrollments" className="mt-5 space-y-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full rounded-full text-xs border-dashed border-status-converted/50 text-status-converted hover:bg-status-converted/5 shadow-sm"
+              onClick={handleOpenAddEnrollment}
+            >
+              <Plus className="mr-1 h-3 w-3" /> New Enrollment
+            </Button>
+            
             {leadEnrollments.map(e => (
-              <Link key={e.id} to={`/enrollments/${e.id}`}>
-                <Card className="border shadow-none">
+              <Link key={e.id} to={`/enrollments/${e.id}`} className="block">
+                <Card className="border shadow-none group relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer hover:border-status-converted/30 hover:bg-status-converted/5">
                   <CardContent className="p-4">
-                    <p className="text-sm font-medium">{e.packageName}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{e.startDate} → {e.endDate}</p>
-                    <p className="mt-1.5 text-sm font-semibold text-primary">{formatCurrency(e.packageCostSnapshot)}</p>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-sm font-bold text-slate-900">{e.packageName}</p>
+                        <p className="text-[10px] font-medium text-muted-foreground mt-0.5 uppercase tracking-wider">
+                          {new Date(e.startDate).toLocaleDateString()} → {new Date(e.endDate).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-7 w-7 rounded-full text-slate-400 hover:text-indigo-600 hover:bg-indigo-50"
+                          onClick={(evt) => { evt.preventDefault(); evt.stopPropagation(); handleEditEnrollment(e); }}
+                        >
+                          <Edit size={14} />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-7 w-7 rounded-full text-slate-400 hover:text-destructive hover:bg-destructive/5"
+                          onClick={(evt) => { evt.preventDefault(); evt.stopPropagation(); setDeletingEnrollmentId(e.id); }}
+                        >
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-3 pt-3 border-t flex items-center justify-between">
+                      <span className="text-sm font-bold text-status-converted">{formatCurrency(e.packageCostSnapshot)}</span>
+                      {e.bill && (
+                        <span className={cn(
+                          "text-[10px] font-bold uppercase py-0.5 px-2 rounded-full",
+                          e.bill.pendingAmount <= 0 ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
+                        )}>
+                          {e.bill.pendingAmount <= 0 ? 'Paid' : `${formatCurrency(e.bill.pendingAmount)} Due`}
+                        </span>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               </Link>
             ))}
-            {leadEnrollments.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">No enrollments</p>}
+            {leadEnrollments.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">No active enrollments</p>}
           </TabsContent>
 
           <TabsContent value="bills" className="mt-5 space-y-2">
@@ -498,6 +573,38 @@ export default function LeadDetail() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Enrollment Modals */}
+      <AddEnrollmentDialog
+        isOpen={isEnrollmentDialogOpen}
+        onClose={() => {
+          setIsEnrollmentDialogOpen(false);
+          setEditingEnrollment(undefined);
+        }}
+        leadId={id!}
+        enrollment={editingEnrollment}
+      />
+
+      <AlertDialog open={!!deletingEnrollmentId} onOpenChange={(open) => !open && setDeletingEnrollmentId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Enrollment?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove the enrollment record and linked billing Information. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteEnrollment}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Confirm Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

@@ -19,6 +19,11 @@ namespace CRM.API.Infrastructure.Persistence.Configurations
             builder.HasIndex(p => p.Name).IsUnique().HasFilter("\"IsDeleted\" = false");
             builder.HasQueryFilter(p => !p.IsDeleted);
 
+            builder.HasData(
+                new Package { Id = new Guid("b1000000-0000-0000-0000-000000000001"), Name = "Detox Starter", DurationInDays = 7, Cost = 299.00m, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow },
+                new Package { Id = new Guid("b1000000-0000-0000-0000-000000000002"), Name = "Wellness Elite", DurationInDays = 14, Cost = 549.00m, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow },
+                new Package { Id = new Guid("b1000000-0000-0000-0000-000000000003"), Name = "Full Rejuvenation", DurationInDays = 30, Cost = 999.00m, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow }
+            );
         }
     }
 }

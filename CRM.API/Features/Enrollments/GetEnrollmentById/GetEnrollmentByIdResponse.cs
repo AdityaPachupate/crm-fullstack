@@ -1,5 +1,11 @@
 namespace CRM.API.Features.Enrollments.GetEnrollmentById
 {
+    public record EnrollmentMedicineItem(
+        string MedicineName,
+        int Quantity,
+        decimal UnitPriceAtSale
+    );
+
     public record GetEnrollmentByIdResponse(
         Guid Id,
         Guid LeadId,
@@ -18,6 +24,8 @@ namespace CRM.API.Features.Enrollments.GetEnrollmentById
         decimal InitialAmount,
         decimal MedicineBillingAmount,
         decimal AmountPaid,
-        decimal PendingAmount
+        decimal PendingAmount,
+
+        List<EnrollmentMedicineItem> MedicineItems
     );
 }

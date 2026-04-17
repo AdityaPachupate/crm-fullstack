@@ -124,6 +124,35 @@ export interface BillDto {
   createdAt: string;
 }
 
+export interface EnrollmentMedicineItem {
+  medicineName: string;
+  quantity: number;
+  unitPriceAtSale: number;
+}
+
+export interface EnrollmentDetailDto {
+  id: string;
+  leadId: string;
+  leadName: string;
+  packageId: string;
+  packageName: string;
+  startDate: string;
+  endDate: string;
+  packageCostSnapshot: number;
+  packageDurationSnapshot: number;
+  isDeleted: boolean;
+  deletedAt: string | null;
+  createdAt: string;
+  
+  // Flattened financial fields
+  initialAmount: number;
+  medicineBillingAmount: number;
+  amountPaid: number;
+  pendingAmount: number;
+
+  medicineItems: EnrollmentMedicineItem[];
+}
+
 export interface EnrollmentDto {
   id: string;
   packageId: string;
