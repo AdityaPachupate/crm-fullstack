@@ -1,9 +1,9 @@
 using CRM.API.Common.Interfaces;
+using CRM.API.Domain;
 using CRM.API.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System.Text.Json;
 
 namespace CRM.API.Features.Bills.AddPaymentToBill;
 
@@ -17,57 +17,51 @@ public class AddPaymentToBillHandler(
 {
     public async Task<AddPaymentToBillResponse> Handle(AddPaymentToBillCommand command, CancellationToken ct)
     {
-        var bill = await db.Bills
-            .IgnoreQueryFilters()
-            .Include(b => b.Items)
-            .FirstOrDefaultAsync(b => b.Id == command.Id, ct);
-
-        if (bill == null)
-        {
-            logger.LogWarning("Bill {BillId} not found for payment recording.", command.Id);
-            return new AddPaymentToBillResponse(false, "Bill not found.");
-        }
-
-        // Deserialize existing history
-        List<PaymentRecord> history;
-        var jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
         try 
         {
-            var rawHistory = JsonSerializer.Deserialize<List<JsonElement>>(bill.PaymentHistoryJson ?? "[]", jsonOptions) ?? new();
-            history = rawHistory.Select(e => {
-                var date = e.TryGetProperty("date", out var dProp) ? dProp.GetDateTime() : bill.CreatedAt;
-                var amount = e.TryGetProperty("amount", out var aProp) ? aProp.GetDecimal() : 0;
-                var id = e.TryGetProperty("id", out var iProp) ? iProp.GetGuid() : Guid.NewGuid();
-                return new PaymentRecord(id, date, amount);
-            }).ToList();
+            // 1. Fetch the bill without complex includes to avoid tracking bloat
+            var bill = await db.Bills
+                .FirstOrDefaultAsync(b => b.Id == command.Id, ct);
+
+            if (bill == null)
+            {
+                logger.LogWarning("Bill {BillId} not found for payment recording.", command.Id);
+                return new AddPaymentToBillResponse(false, "Bill not found.");
+            }
+
+            // 2. Create and add the new payment record first
+            var payment = new BillPayment
+            {
+                Id = Guid.NewGuid(),
+                BillId = bill.Id,
+                Amount = command.Request.Amount,
+                DatePaid = DateTime.UtcNow,
+                IsDeleted = false
+            };
+
+            db.BillPayments.Add(payment);
+            await db.SaveChangesAsync(ct); // Save the payment first
+
+            // 3. Force a totals recalculation from the DB state
+            // This is the most reliable way to ensure AmountPaid matches the truth
+            var allActivePaymentsSum = await db.BillPayments
+                .Where(p => p.BillId == bill.Id && !p.IsDeleted)
+                .SumAsync(p => p.Amount, ct);
+
+            bill.AmountPaid = allActivePaymentsSum;
+            bill.PendingAmount = (bill.InitialAmount + bill.MedicineBillingAmount) - bill.AmountPaid;
+
+            await db.SaveChangesAsync(ct); // Update the summary on the Bill
+
+            logger.LogInformation("Payment recorded and totals synced. BillId: {BillId}. TransactionId: {PaymentId}", 
+                bill.Id, payment.Id);
+
+            return new AddPaymentToBillResponse(true, "Payment recorded successfully.");
         }
-        catch 
+        catch (Exception ex)
         {
-            history = new();
+            logger.LogError(ex, "Detailed error while recording payment for Bill {BillId}: {Message}", command.Id, ex.Message);
+            return new AddPaymentToBillResponse(false, $"Server Error: {ex.Message}");
         }
-
-        // Backfill: If AmountPaid > 0 but history is empty, add the initial payment
-        if (bill.AmountPaid > 0 && history.Count == 0)
-        {
-            history.Add(new PaymentRecord(Guid.NewGuid(), bill.CreatedAt, bill.AmountPaid));
-        }
-
-        // Add new payment
-        var newPayment = new PaymentRecord(Guid.NewGuid(), DateTime.UtcNow, command.Request.Amount);
-        history.Add(newPayment);
-
-        // Update totals
-        bill.AmountPaid += command.Request.Amount;
-        billRepository.RecalculateTotals(bill);
-
-        // Serialize back
-        bill.PaymentHistoryJson = JsonSerializer.Serialize(history, jsonOptions);
-
-        await db.SaveChangesAsync(ct);
-
-        logger.LogInformation("Payment recorded. Total Paid: {Paid}, History Count: {Count}", 
-            bill.AmountPaid, history.Count);
-
-        return new AddPaymentToBillResponse(true, "Payment recorded successfully.");
     }
 }

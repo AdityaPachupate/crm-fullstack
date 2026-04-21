@@ -9,6 +9,12 @@ export interface BillDetailDto extends BillDto {
     quantity: number;
     unitPriceAtSale: number;
   }[];
+  payments: {
+    id: string;
+    amount: number;
+    datePaid: string;
+    isDeleted: boolean;
+  }[];
 }
 
 export const billsApi = {
@@ -23,8 +29,9 @@ export const billsApi = {
     });
   },
 
-  deletePayment: async (billId: string, paymentId: string): Promise<{ success: boolean; message: string }> => {
-    return apiClient<{ success: boolean; message: string }>(`/api/bills/${billId}/payments/${paymentId}`, {
+  deletePayment: async (billId: string, paymentId: string, isHard: boolean = false): Promise<{ success: boolean; message: string }> => {
+    const url = `/api/bills/${billId}/payments/${paymentId}${isHard ? '?hard=true' : ''}`;
+    return apiClient<{ success: boolean; message: string }>(url, {
       method: 'DELETE'
     });
   }

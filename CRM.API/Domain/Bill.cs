@@ -18,24 +18,26 @@ namespace CRM.API.Domain
         /// <summary>
         /// Total amount processed from itemized medicines.
         /// </summary>
-        public decimal MedicineBillingAmount { get; set; }
+        public decimal MedicineBillingAmount { get; internal set; }
 
         /// <summary>
         /// Total cash received (applied against both Package and Medicines).
         /// </summary>
-        public decimal AmountPaid { get; set; }
+        public decimal AmountPaid { get; internal set; }
 
         /// <summary>
         /// Remaining balance ( (InitialAmount + MedicineBillingAmount) - AmountPaid )
         /// </summary>
-        public decimal PendingAmount { get; set; }
-        public string PaymentHistoryJson { get; set; } = "[]";
+        public decimal PendingAmount { get; internal set; }
+
         public DateTime CreatedAt { get; set; }
         public bool IsDeleted { get; set; }
         public DateTime? DeletedAt { get; set; }
+        
         public Lead Lead { get; set; } = null!;
         public Enrollment? Enrollment { get; set; }
         public RejoinRecord? RejoinRecord { get; set; }
         public List<BillItem> Items { get; set; } = new();
+        public List<BillPayment> Payments { get; set; } = new();
     }
 }

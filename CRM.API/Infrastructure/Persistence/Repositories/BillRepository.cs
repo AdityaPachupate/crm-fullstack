@@ -38,7 +38,19 @@ namespace CRM.API.Infrastructure.Persistence.Repositories
             }
 
             bill.MedicineBillingAmount = medicineTotal;
-            bill.PendingAmount = (bill.InitialAmount + bill.MedicineBillingAmount) - bill.AmountPaid;
+            
+            // Sync initial payment to relational table if present
+            if (bill.AmountPaid > 0 && !bill.Payments.Any())
+            {
+                bill.Payments.Add(new BillPayment 
+                { 
+                    Id = Guid.NewGuid(),
+                    Amount = bill.AmountPaid, 
+                    DatePaid = DateTime.UtcNow 
+                });
+            }
+
+            RecalculateTotals(bill);
 
             db.Bills.Add(bill);
             await db.SaveChangesAsync(ct);
@@ -57,6 +69,7 @@ namespace CRM.API.Infrastructure.Persistence.Repositories
                     .ThenInclude(r => r.Package)
                 .Include(b => b.Items)
                     .ThenInclude(i => i.Medicine)
+                .Include(b => b.Payments)
                 .Where(b => b.LeadId == leadId)
                 .OrderByDescending(b => b.CreatedAt)
                 .ToListAsync(ct);
@@ -83,7 +96,18 @@ namespace CRM.API.Infrastructure.Persistence.Repositories
             if (bill == null) return;
 
             if (initialAmount.HasValue) bill.InitialAmount = initialAmount.Value;
-            if (amountPaid.HasValue) bill.AmountPaid = amountPaid.Value;
+            
+            // Note: In relational mode, we don't directly update AmountPaid.
+            // But if this is a Create-style update or legacy sync, we can handle it.
+            if (amountPaid.HasValue && !bill.Payments.Any())
+            {
+                bill.Payments.Add(new BillPayment 
+                { 
+                    Id = Guid.NewGuid(),
+                    Amount = amountPaid.Value, 
+                    DatePaid = DateTime.UtcNow 
+                });
+            }
 
             if (items != null)
             {
@@ -194,6 +218,7 @@ namespace CRM.API.Infrastructure.Persistence.Repositories
         public void RecalculateTotals(Bill bill)
         {
             bill.MedicineBillingAmount = bill.Items.Sum(i => i.Quantity * i.UnitPriceSnapshot);
+            bill.AmountPaid = bill.Payments.Where(p => !p.IsDeleted).Sum(p => p.Amount);
             bill.PendingAmount = (bill.InitialAmount + bill.MedicineBillingAmount) - bill.AmountPaid;
         }
     }

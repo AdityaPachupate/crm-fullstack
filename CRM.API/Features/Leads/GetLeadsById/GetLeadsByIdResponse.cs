@@ -57,7 +57,6 @@ namespace CRM.API.Features.Leads.GetLeadsById
         decimal AdvanceAmount,
         decimal PendingAmount,
         decimal MedicineBillingAmount,
-        DateTime CreatedAt,
-        string? PaymentHistoryJson
+        DateTime CreatedAt
     );
 }

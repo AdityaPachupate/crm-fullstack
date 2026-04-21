@@ -13,6 +13,7 @@ namespace CRM.API.Infrastructure.Persistence
         public DbSet<Bill> Bills => Set<Bill>();
         public DbSet<Medicine> Medicines => Set<Medicine>();
         public DbSet<BillItem> BillItems => Set<BillItem>();
+        public DbSet<BillPayment> BillPayments => Set<BillPayment>();
         public DbSet<LookupValue> LookupValues => Set<LookupValue>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

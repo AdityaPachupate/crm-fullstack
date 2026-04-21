@@ -10,9 +10,9 @@ public class DeletePaymentFromBillEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapDelete("/bills/{id}/payments/{paymentId}", async (Guid id, Guid paymentId, ISender sender) =>
+        app.MapDelete("/bills/{id}/payments/{paymentId}", async (Guid id, Guid paymentId, bool? hard, ISender sender) =>
         {
-            var command = new DeletePaymentFromBillCommand(id, paymentId);
+            var command = new DeletePaymentFromBillCommand(id, paymentId, hard ?? false);
             var result = await sender.Send(command);
             
             return result.Success 

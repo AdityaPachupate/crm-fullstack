@@ -153,21 +153,11 @@ export default function LeadDetail() {
     // 5. Payments (Dynamic from billsData)
     // This is the source of truth for all payments
     (billsData ?? []).forEach(bill => {
-      let payments: { date: string, amount: number }[] = [];
-      try {
-        payments = JSON.parse(bill.paymentHistoryJson || '[]');
-      } catch (err) {
-        console.error("Failed to parse payment history in timeline", err);
-      }
-
-      // Handle cases where amountPaid > 0 but history is empty (migration scenario)
-      if (bill.amountPaid > 0 && payments.length === 0) {
-        payments.push({ date: bill.createdAt, amount: bill.amountPaid });
-      }
-
-      payments.forEach((p: any) => {
-        const amount = p.amount ?? p.Amount;
-        const date = p.date ?? p.Date;
+      const activePayments = (bill.payments || []).filter(p => !p.isDeleted);
+      
+      activePayments.forEach((p) => {
+        const amount = p.amount;
+        const date = p.datePaid;
         
         if (amount !== undefined) {
           events.push({

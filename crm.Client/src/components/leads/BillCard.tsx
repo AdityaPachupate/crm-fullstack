@@ -19,14 +19,18 @@ export function BillCard({ bill, onAddPayment, patientName }: BillCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
-  const handleDeleteTransaction = async (paymentId: string) => {
-    if (!window.confirm("Are you sure you want to delete this payment record? This will update the bill balance.")) return;
+  const handleDeleteTransaction = async (paymentId: string, isHard: boolean = false) => {
+    const confirmMsg = isHard 
+      ? "Are you sure you want to PERMANENTLY delete this record? This cannot be undone." 
+      : "Move this transaction to trash? It will be removed from your totals.";
+      
+    if (!window.confirm(confirmMsg)) return;
     
     setIsDeleting(paymentId);
     try {
-      const result = await billsApi.deletePayment(bill.id, paymentId);
+      const result = await billsApi.deletePayment(bill.id, paymentId, isHard);
       if (result.success) {
-        toast.success("Transaction deleted");
+        toast.success(isHard ? "Permanently deleted" : "Moved to trash");
         queryClient.invalidateQueries({ queryKey: ['bills'] });
         queryClient.invalidateQueries({ queryKey: ['leads'] });
       } else {
@@ -38,26 +42,17 @@ export function BillCard({ bill, onAddPayment, patientName }: BillCardProps) {
       setIsDeleting(null);
     }
   };
+
   const pending = bill.pendingAmount;
   const isPaid = pending <= 0;
   
-  // Parse payment history
-  let paymentHistory: { date: string; amount: number }[] = [];
-  try {
-    paymentHistory = JSON.parse(bill.paymentHistoryJson || '[]');
-  } catch (e) {
-    console.error('Failed to parse payment history', e);
-  }
+  // Use relational payments
+  const allPayments = bill.payments || [];
+  const activePayments = allPayments.filter(p => !p.isDeleted);
 
   const handlePrint = () => {
     const isPaid = bill.pendingAmount <= 0;
-    const paymentHistory = (() => {
-      try {
-        return JSON.parse(bill.paymentHistoryJson || '[]');
-      } catch {
-        return [];
-      }
-    })();
+    const paymentHistory = activePayments;
 
     // Create a unique filename for the PDF (used as document title)
     const formattedDate = new Date(bill.createdAt).toLocaleDateString().replace(/\//g, '-');
@@ -176,9 +171,9 @@ export function BillCard({ bill, onAddPayment, patientName }: BillCardProps) {
                 <tbody>
                   ${paymentHistory.map((p: any) => `
                     <tr>
-                      <td>${new Date(p.date || p.Date || bill.createdAt).toLocaleDateString()}</td>
+                      <td>${new Date(p.datePaid || bill.createdAt).toLocaleDateString()}</td>
                       <td>Installment Payment</td>
-                      <td style="text-align: right">₹${(p.amount || p.Amount || 0).toLocaleString()}</td>
+                      <td style="text-align: right">₹${(p.amount || 0).toLocaleString()}</td>
                     </tr>
                   `).join('')}
                 </tbody>
@@ -314,35 +309,68 @@ export function BillCard({ bill, onAddPayment, patientName }: BillCardProps) {
                   <CreditCard className="h-3 w-3" /> Payment History
                 </div>
                 <div className="space-y-1">
-                  {paymentHistory.length > 0 ? (
-                    paymentHistory.map((p: any, idx) => {
-                      const amount = p.amount ?? p.Amount ?? 0;
-                      const date = p.date ?? p.Date ?? bill.createdAt;
-                      const pId = p.id ?? p.Id;
+                  {allPayments.length > 0 ? (
+                    allPayments.map((p, idx) => {
+                      const amount = p.amount;
+                      const date = p.datePaid;
+                      const pId = p.id;
+                      const isDeleted = p.isDeleted;
                       
                       return (
-                        <div key={idx} className="flex items-center justify-between text-xs py-1.5 px-2 border-l-2 border-emerald-500 bg-emerald-50/10 ml-1 group/row">
+                        <div key={idx} className={cn(
+                          "flex items-center justify-between text-xs py-1.5 px-2 border-l-2 ml-1 group/row transition-opacity",
+                          isDeleted 
+                            ? "border-slate-300 bg-slate-50/50 opacity-60 italic" 
+                            : "border-emerald-500 bg-emerald-50/10"
+                        )}>
                           <div className="flex flex-col">
-                            <span className="font-medium text-slate-600">{new Date(date).toLocaleDateString()}</span>
-                            {idx === 0 && <span className="text-[9px] text-emerald-600 font-bold uppercase">Initial Advance</span>}
+                            <span className={cn("font-medium", isDeleted ? "text-slate-400 line-through" : "text-slate-600")}>
+                              {new Date(date).toLocaleDateString()}
+                            </span>
+                            {isDeleted ? (
+                              <span className="text-[9px] text-slate-400 font-bold uppercase">Trashed</span>
+                            ) : (
+                              idx === 0 && <span className="text-[9px] text-emerald-600 font-bold uppercase">Initial Advance</span>
+                            )}
                           </div>
                           
                           <div className="flex items-center gap-3">
-                            <span className="font-bold text-emerald-700">+{formatCurrency(amount)}</span>
-                            {pId && (
-                              <button 
-                                onClick={() => handleDeleteTransaction(pId)} 
-                                disabled={!!isDeleting}
-                                className="p-1 text-slate-400 hover:text-rose-500 transition-all disabled:opacity-50"
-                                title="Delete transaction"
-                              >
-                                {isDeleting === pId ? (
-                                  <div className="h-3.5 w-3.5 animate-spin border-2 border-slate-300 border-t-slate-500 rounded-full" />
-                                ) : (
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                )}
-                              </button>
-                            )}
+                            <span className={cn("font-bold", isDeleted ? "text-slate-400" : "text-emerald-700")}>
+                              {isDeleted ? '-' : '+'}{formatCurrency(amount)}
+                            </span>
+                            
+                            <div className="flex items-center">
+                              {isDeleted ? (
+                                <button 
+                                  onClick={() => handleDeleteTransaction(pId, true)} 
+                                  disabled={!!isDeleting}
+                                  className="p-1 text-slate-400 hover:text-red-600 transition-all font-bold"
+                                  title="Permanently delete from database"
+                                >
+                                  {isDeleting === pId ? (
+                                    <div className="h-3.5 w-3.5 animate-spin border-2 border-slate-300 border-t-slate-500 rounded-full" />
+                                  ) : (
+                                    "Perm"
+                                  )}
+                                </button>
+                              ) : (
+                                <button 
+                                  onClick={() => handleDeleteTransaction(pId, false)} 
+                                  disabled={!!isDeleting}
+                                  className={cn(
+                                    "p-1 text-slate-400 hover:text-rose-500 transition-all",
+                                    "opacity-100" // Always visible for mobile as per user request
+                                  )}
+                                  title="Move to trash"
+                                >
+                                  {isDeleting === pId ? (
+                                    <div className="h-3.5 w-3.5 animate-spin border-2 border-slate-300 border-t-slate-500 rounded-full" />
+                                  ) : (
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  )}
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       );

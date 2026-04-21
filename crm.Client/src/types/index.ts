@@ -122,7 +122,6 @@ export interface BillDto {
   pendingAmount: number;
   medicineBillingAmount: number;
   createdAt: string;
-  paymentHistoryJson: string;
 }
 
 export interface EnrollmentMedicineItem {

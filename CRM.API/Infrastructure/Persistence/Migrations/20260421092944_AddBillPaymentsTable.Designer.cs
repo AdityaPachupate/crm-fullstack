@@ -3,6 +3,7 @@ using System;
 using CRM.API.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CRM.API.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260421092944_AddBillPaymentsTable")]
+    partial class AddBillPaymentsTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -54,6 +57,10 @@ namespace CRM.API.Infrastructure.Persistence.Migrations
 
                     b.Property<decimal>("MedicineBillingAmount")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("PaymentHistoryJson")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<decimal>("PendingAmount")
                         .HasColumnType("decimal(18,2)");
@@ -434,42 +441,42 @@ namespace CRM.API.Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = new Guid("c1000000-0000-0000-0000-000000000001"),
-                            CreatedAt = new DateTime(2026, 4, 21, 9, 49, 33, 846, DateTimeKind.Utc).AddTicks(3245),
+                            CreatedAt = new DateTime(2026, 4, 21, 9, 29, 42, 586, DateTimeKind.Utc).AddTicks(5220),
                             IsActive = true,
                             IsDeleted = false,
                             Name = "Ashwagandha Extract",
                             Price = 45.00m,
-                            UpdatedAt = new DateTime(2026, 4, 21, 9, 49, 33, 846, DateTimeKind.Utc).AddTicks(3249)
+                            UpdatedAt = new DateTime(2026, 4, 21, 9, 29, 42, 586, DateTimeKind.Utc).AddTicks(5222)
                         },
                         new
                         {
                             Id = new Guid("c1000000-0000-0000-0000-000000000002"),
-                            CreatedAt = new DateTime(2026, 4, 21, 9, 49, 33, 846, DateTimeKind.Utc).AddTicks(3250),
+                            CreatedAt = new DateTime(2026, 4, 21, 9, 29, 42, 586, DateTimeKind.Utc).AddTicks(5224),
                             IsActive = true,
                             IsDeleted = false,
                             Name = "Brahmi Vitality",
                             Price = 35.00m,
-                            UpdatedAt = new DateTime(2026, 4, 21, 9, 49, 33, 846, DateTimeKind.Utc).AddTicks(3250)
+                            UpdatedAt = new DateTime(2026, 4, 21, 9, 29, 42, 586, DateTimeKind.Utc).AddTicks(5224)
                         },
                         new
                         {
                             Id = new Guid("c1000000-0000-0000-0000-000000000003"),
-                            CreatedAt = new DateTime(2026, 4, 21, 9, 49, 33, 846, DateTimeKind.Utc).AddTicks(3252),
+                            CreatedAt = new DateTime(2026, 4, 21, 9, 29, 42, 586, DateTimeKind.Utc).AddTicks(5226),
                             IsActive = true,
                             IsDeleted = false,
                             Name = "Triphala Cleanse",
                             Price = 25.00m,
-                            UpdatedAt = new DateTime(2026, 4, 21, 9, 49, 33, 846, DateTimeKind.Utc).AddTicks(3252)
+                            UpdatedAt = new DateTime(2026, 4, 21, 9, 29, 42, 586, DateTimeKind.Utc).AddTicks(5226)
                         },
                         new
                         {
                             Id = new Guid("c1000000-0000-0000-0000-000000000004"),
-                            CreatedAt = new DateTime(2026, 4, 21, 9, 49, 33, 846, DateTimeKind.Utc).AddTicks(3254),
+                            CreatedAt = new DateTime(2026, 4, 21, 9, 29, 42, 586, DateTimeKind.Utc).AddTicks(5228),
                             IsActive = true,
                             IsDeleted = false,
                             Name = "Shatavari Glow",
                             Price = 55.00m,
-                            UpdatedAt = new DateTime(2026, 4, 21, 9, 49, 33, 846, DateTimeKind.Utc).AddTicks(3254)
+                            UpdatedAt = new DateTime(2026, 4, 21, 9, 29, 42, 586, DateTimeKind.Utc).AddTicks(5228)
                         });
                 });
 
@@ -520,31 +527,31 @@ namespace CRM.API.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("b1000000-0000-0000-0000-000000000001"),
                             Cost = 299.00m,
-                            CreatedAt = new DateTime(2026, 4, 21, 9, 49, 33, 846, DateTimeKind.Utc).AddTicks(6909),
+                            CreatedAt = new DateTime(2026, 4, 21, 9, 29, 42, 586, DateTimeKind.Utc).AddTicks(8578),
                             DurationInDays = 7,
                             IsDeleted = false,
                             Name = "Detox Starter",
-                            UpdatedAt = new DateTime(2026, 4, 21, 9, 49, 33, 846, DateTimeKind.Utc).AddTicks(6917)
+                            UpdatedAt = new DateTime(2026, 4, 21, 9, 29, 42, 586, DateTimeKind.Utc).AddTicks(8580)
                         },
                         new
                         {
                             Id = new Guid("b1000000-0000-0000-0000-000000000002"),
                             Cost = 549.00m,
-                            CreatedAt = new DateTime(2026, 4, 21, 9, 49, 33, 846, DateTimeKind.Utc).AddTicks(6919),
+                            CreatedAt = new DateTime(2026, 4, 21, 9, 29, 42, 586, DateTimeKind.Utc).AddTicks(8582),
                             DurationInDays = 14,
                             IsDeleted = false,
                             Name = "Wellness Elite",
-                            UpdatedAt = new DateTime(2026, 4, 21, 9, 49, 33, 846, DateTimeKind.Utc).AddTicks(6919)
+                            UpdatedAt = new DateTime(2026, 4, 21, 9, 29, 42, 586, DateTimeKind.Utc).AddTicks(8582)
                         },
                         new
                         {
                             Id = new Guid("b1000000-0000-0000-0000-000000000003"),
                             Cost = 999.00m,
-                            CreatedAt = new DateTime(2026, 4, 21, 9, 49, 33, 846, DateTimeKind.Utc).AddTicks(6921),
+                            CreatedAt = new DateTime(2026, 4, 21, 9, 29, 42, 586, DateTimeKind.Utc).AddTicks(8585),
                             DurationInDays = 30,
                             IsDeleted = false,
                             Name = "Full Rejuvenation",
-                            UpdatedAt = new DateTime(2026, 4, 21, 9, 49, 33, 846, DateTimeKind.Utc).AddTicks(6921)
+                            UpdatedAt = new DateTime(2026, 4, 21, 9, 29, 42, 586, DateTimeKind.Utc).AddTicks(8585)
                         });
                 });
 

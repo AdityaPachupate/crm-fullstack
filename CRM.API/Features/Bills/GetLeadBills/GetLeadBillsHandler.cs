@@ -29,6 +29,13 @@ namespace CRM.API.Features.Bills.GetLeadBills
                     i.UnitPriceSnapshot
                 )).ToList();
 
+                var paymentsList = (b.Payments ?? new List<BillPayment>()).Select(p => new BillPaymentResponse(
+                    p.Id,
+                    p.Amount,
+                    p.DatePaid,
+                    p.IsDeleted
+                )).OrderBy(p => p.DatePaid).ToList();
+
                 return new GetLeadBillsResponse(
                     b.Id,
                     b.InitialAmount,
@@ -36,9 +43,9 @@ namespace CRM.API.Features.Bills.GetLeadBills
                     b.PendingAmount,
                     b.MedicineBillingAmount,
                     b.CreatedAt,
-                    b.PaymentHistoryJson ?? "[]",
                     packageName,
-                    itemsList
+                    itemsList,
+                    paymentsList
                 );
             }).ToList();
         }

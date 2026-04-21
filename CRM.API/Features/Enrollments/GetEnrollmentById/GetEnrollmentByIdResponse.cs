@@ -26,7 +26,6 @@ namespace CRM.API.Features.Enrollments.GetEnrollmentById
         decimal MedicineBillingAmount,
         decimal AmountPaid,
         decimal PendingAmount,
-        string? PaymentHistoryJson,
 
         List<EnrollmentMedicineItem> MedicineItems
     );

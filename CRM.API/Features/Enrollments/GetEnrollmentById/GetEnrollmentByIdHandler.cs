@@ -38,7 +38,6 @@ namespace CRM.API.Features.Enrollments.GetEnrollmentById
                     e.Bill != null ? e.Bill.MedicineBillingAmount : 0,
                     e.Bill != null ? e.Bill.AmountPaid : 0,
                     e.Bill != null ? e.Bill.PendingAmount : 0,
-                    e.Bill != null ? e.Bill.PaymentHistoryJson : "[]",
                     e.Bill != null 
                         ? e.Bill.Items.Select(i => new EnrollmentMedicineItem(i.Medicine.Name, i.Quantity, i.UnitPriceSnapshot)).ToList() 
                         : new List<EnrollmentMedicineItem>()
