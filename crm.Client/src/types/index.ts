@@ -117,8 +117,8 @@ export interface FollowUpDto {
 
 export interface BillDto {
   id: string;
-  packageAmount: number;
-  advanceAmount: number;
+  initialAmount: number;
+  amountPaid: number;
   pendingAmount: number;
   medicineBillingAmount: number;
   createdAt: string;

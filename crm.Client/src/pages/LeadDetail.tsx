@@ -15,6 +15,9 @@ import { useFollowUps } from '@/hooks/useFollowUps';
 import { useEnrollments } from '@/hooks/useEnrollments';
 import { CompleteFollowUpDialog } from '@/components/leads/CompleteFollowUpDialog';
 import { AddEnrollmentDialog } from '@/components/leads/AddEnrollmentDialog';
+import { useBills, useAddPayment } from '@/hooks/useBills';
+import { BillCard } from '@/components/leads/BillCard';
+import { AddPaymentDialog } from '@/components/leads/AddPaymentDialog';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -56,6 +59,12 @@ export default function LeadDetail() {
   const deleteLeadMutation = useDeleteLead();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
+  // Bills State
+  const { data: billsData, isLoading: billsLoading } = useBills(id || '');
+  const addPaymentMutation = useAddPayment();
+  const [selectedBillId, setSelectedBillId] = useState<string | null>(null);
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+
   const leadFollowUps = useMemo(
     () => (lead?.followUps ?? []).slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
     [lead]
@@ -64,12 +73,8 @@ export default function LeadDetail() {
   const leadRejoins = lead?.rejoinRecords ?? [];
 
   const leadBills = useMemo(
-    () =>
-      [...leadEnrollments, ...leadRejoins]
-        .map((entry) => entry.bill)
-        .filter((bill): bill is BillDto => bill !== null)
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
-    [leadEnrollments, leadRejoins]
+    () => billsData || [],
+    [billsData]
   );
 
   const totalBalance = useMemo(
@@ -101,7 +106,6 @@ export default function LeadDetail() {
 
     // 2. Follow-ups
     (lead?.followUps ?? []).forEach(f => {
-      // Created
       events.push({
         type: 'followup_created',
         date: f.createdAt,
@@ -110,7 +114,6 @@ export default function LeadDetail() {
         icon: Calendar,
         color: 'text-indigo-500'
       });
-      // Completed
       if (f.completedAt) {
         events.push({
           type: 'followup_completed',
@@ -123,7 +126,7 @@ export default function LeadDetail() {
       }
     });
 
-    // 3. Enrollments & Bills
+    // 3. Enrollments (Static Events)
     leadEnrollments.forEach(e => {
       events.push({
         type: 'enrollment',
@@ -133,41 +136,9 @@ export default function LeadDetail() {
         icon: CheckCircle,
         color: 'text-status-converted'
       });
-      
-      // Payment History from Bill
-      const bill = e.bill;
-      if (bill) {
-        let payments: { date: string, amount: number }[] = [];
-        try {
-          payments = JSON.parse(bill.paymentHistoryJson || '[]');
-        } catch (err) {
-          console.error("Failed to parse payment history", err);
-        }
-
-        // If AdvanceAmount > 0 but history is empty, show the initial payment
-        if (bill.advanceAmount > 0 && payments.length === 0) {
-          payments.push({ date: bill.createdAt, amount: bill.advanceAmount });
-        }
-
-        payments.forEach((p: any) => {
-          const amount = p.amount ?? p.Amount;
-          const date = p.date ?? p.Date;
-          
-          if (amount !== undefined) {
-            events.push({
-              type: 'payment',
-              date: date,
-              title: `₹${amount.toLocaleString()} Payment Received`,
-              description: `Part of ${e.packageName} balance`,
-              icon: CreditCard,
-              color: 'text-emerald-500'
-            });
-          }
-        });
-      }
     });
 
-    // 4. Rejoins
+    // 4. Rejoins (Static Events)
     leadRejoins.forEach(r => {
       events.push({
         type: 'rejoin',
@@ -177,40 +148,42 @@ export default function LeadDetail() {
         icon: Plus,
         color: 'text-emerald-600'
       });
-      
-      const bill = r.bill;
-      if (bill) {
-        let payments: any[] = [];
-        try {
-          payments = JSON.parse(bill.paymentHistoryJson || '[]');
-        } catch (err) {
-          console.error("Failed to parse rejoin payment history", err);
-        }
+    });
 
-        if (bill.advanceAmount > 0 && payments.length === 0) {
-          payments.push({ date: bill.createdAt, amount: bill.advanceAmount });
-        }
-
-        payments.forEach((p: any) => {
-          const amount = p.amount ?? p.Amount;
-          const date = p.date ?? p.Date;
-          
-          if (amount !== undefined) {
-            events.push({
-              type: 'payment',
-              date: date,
-              title: `₹${amount.toLocaleString()} Payment Received (Rejoin)`,
-              description: `Part of ${r.packageName} balance`,
-              icon: CreditCard,
-              color: 'text-emerald-500'
-            });
-          }
-        });
+    // 5. Payments (Dynamic from billsData)
+    // This is the source of truth for all payments
+    (billsData ?? []).forEach(bill => {
+      let payments: { date: string, amount: number }[] = [];
+      try {
+        payments = JSON.parse(bill.paymentHistoryJson || '[]');
+      } catch (err) {
+        console.error("Failed to parse payment history in timeline", err);
       }
+
+      // Handle cases where amountPaid > 0 but history is empty (migration scenario)
+      if (bill.amountPaid > 0 && payments.length === 0) {
+        payments.push({ date: bill.createdAt, amount: bill.amountPaid });
+      }
+
+      payments.forEach((p: any) => {
+        const amount = p.amount ?? p.Amount;
+        const date = p.date ?? p.Date;
+        
+        if (amount !== undefined) {
+          events.push({
+            type: 'payment',
+            date: date,
+            title: `₹${amount.toLocaleString()} Payment Received`,
+            description: `Payment for ${bill.packageName}`,
+            icon: CreditCard,
+            color: 'text-emerald-500'
+          });
+        }
+      });
     });
 
     return events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [lead, leadEnrollments]);
+  }, [lead, leadEnrollments, leadRejoins, billsData]);
 
   const updateLeadMutation = useUpdateLead();
   const allStatuses = getAllStaticCodes('LeadStatus') as LeadStatus[];
@@ -222,6 +195,11 @@ export default function LeadDetail() {
   const selectedFollowUp = useMemo(() => 
     leadFollowUps.find(f => f.id === completingFollowUpId),
     [leadFollowUps, completingFollowUpId]
+  );
+
+  const selectedBill = useMemo(() => 
+    (billsData ?? []).find(b => b.id === selectedBillId),
+    [billsData, selectedBillId]
   );
 
   if (loading) return <div className="p-8 text-center text-muted-foreground">Loading patient...</div>;
@@ -263,6 +241,22 @@ export default function LeadDetail() {
       setDeletingEnrollmentId(null);
     } catch (error) {
       toast.error("Failed to delete enrollment");
+    }
+  };
+
+  const handleOpenAddPayment = (billId: string) => {
+    setSelectedBillId(billId);
+    setIsPaymentDialogOpen(true);
+  };
+
+  const handleAddPayment = async (amount: number) => {
+    if (!selectedBillId) return;
+    try {
+      await addPaymentMutation.mutateAsync({ billId: selectedBillId, amount });
+      setIsPaymentDialogOpen(false);
+      setSelectedBillId(null);
+    } catch (error) {
+      // toast.error is handled in hook
     }
   };
 
@@ -534,14 +528,29 @@ export default function LeadDetail() {
                     </div>
                     
                     <div className="mt-3 pt-3 border-t flex items-center justify-between">
-                      <span className="text-sm font-bold text-status-converted">{formatCurrency(e.packageCostSnapshot)}</span>
-                      {e.bill && (
-                        <span className={cn(
-                          "text-[10px] font-bold uppercase py-0.5 px-2 rounded-full",
-                          e.bill.pendingAmount <= 0 ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
-                        )}>
-                          {e.bill.pendingAmount <= 0 ? 'Paid' : `${formatCurrency(e.bill.pendingAmount)} Due`}
-                        </span>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-status-converted">{formatCurrency(e.packageCostSnapshot)}</span>
+                        {e.bill && (
+                          <span className={cn(
+                            "text-[10px] font-bold uppercase",
+                            e.bill.pendingAmount <= 0 ? "text-emerald-600" : "text-rose-600"
+                          )}>
+                            {e.bill.pendingAmount <= 0 ? 'Paid' : `${formatCurrency(e.bill.pendingAmount)} Due`}
+                          </span>
+                        )}
+                      </div>
+                      {e.bill && e.bill.pendingAmount > 0 && (
+                        <Button 
+                          size="sm" 
+                          className="h-7 px-3 text-[10px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-full transition-transform active:scale-95 shadow-md shadow-indigo-100"
+                          onClick={(evt) => { 
+                            evt.preventDefault(); 
+                            evt.stopPropagation(); 
+                            handleOpenAddPayment(e.bill.id); 
+                          }}
+                        >
+                          <Plus className="h-3 w-3 mr-1" /> Add Payment
+                        </Button>
                       )}
                     </div>
                   </CardContent>
@@ -551,26 +560,24 @@ export default function LeadDetail() {
             {leadEnrollments.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">No active enrollments</p>}
           </TabsContent>
 
-          <TabsContent value="bills" className="mt-5 space-y-2">
-            {leadBills.map(b => {
-              const pending = b.pendingAmount;
-              const total = b.packageAmount + b.medicineBillingAmount;
-              return (
-                <Card key={b.id} className="border shadow-none">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs text-muted-foreground">{new Date(b.createdAt).toLocaleDateString()}</p>
-                      <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${pending <= 0 ? 'text-status-converted' : 'text-destructive'}`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${pending <= 0 ? 'bg-status-converted' : 'bg-destructive'}`} />
-                        {pending <= 0 ? 'Paid' : `${formatCurrency(pending)} due`}
-                      </span>
-                    </div>
-                    <p className="mt-1.5 text-sm font-medium">{formatCurrency(total)}</p>
-                  </CardContent>
-                </Card>
-              );
-            })}
-            {leadBills.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">No bills</p>}
+          <TabsContent value="bills" className="mt-5 space-y-3">
+            {billsLoading ? (
+              <div className="py-10 text-center text-sm text-slate-400 font-medium">Loading bills...</div>
+            ) : (
+              <>
+                {(billsData ?? []).map(b => (
+                  <BillCard 
+                    key={b.id} 
+                    bill={b} 
+                    onAddPayment={handleOpenAddPayment} 
+                    patientName={lead.name}
+                  />
+                ))}
+                {(billsData ?? []).length === 0 && (
+                  <p className="py-8 text-center text-sm text-muted-foreground">No bills found for this patient</p>
+                )}
+              </>
+            )}
           </TabsContent>
 
           <TabsContent value="rejoins" className="mt-5 space-y-2">
@@ -669,6 +676,16 @@ export default function LeadDetail() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AddPaymentDialog
+        isOpen={isPaymentDialogOpen}
+        onClose={() => setIsPaymentDialogOpen(false)}
+        onConfirm={handleAddPayment}
+        isSubmitting={addPaymentMutation.isPending}
+        billId={selectedBillId}
+        pendingAmount={selectedBill?.pendingAmount || 0}
+        packageName={selectedBill?.packageName}
+      />
     </div>
   );
 }

@@ -11,6 +11,8 @@ namespace CRM.API.Features.Bills.GetLeadBills
         decimal PendingAmount,
         decimal MedicineBillingAmount,
         DateTime CreatedAt,
+        string PaymentHistoryJson,
+        string PackageName,
         List<BillItemResponse> Items
     );
 

@@ -51,6 +51,10 @@ namespace CRM.API.Infrastructure.Persistence.Repositories
             return await db.Bills
                 .AsNoTracking()
                 .IgnoreQueryFilters()
+                .Include(b => b.Enrollment)
+                    .ThenInclude(e => e.Package)
+                .Include(b => b.RejoinRecord)
+                    .ThenInclude(r => r.Package)
                 .Include(b => b.Items)
                     .ThenInclude(i => i.Medicine)
                 .Where(b => b.LeadId == leadId)

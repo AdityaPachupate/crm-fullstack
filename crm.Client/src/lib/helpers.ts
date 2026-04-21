@@ -26,8 +26,9 @@ export function relativeDate(dateStr: string): string {
   return date.toLocaleDateString();
 }
 
-export function formatCurrency(amount: number): string {
-  return '₹' + amount.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+export function formatCurrency(amount: number | undefined | null): string {
+  const val = amount ?? 0;
+  return '₹' + val.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
 
 export function statusColor(status: LeadStatus): string {
