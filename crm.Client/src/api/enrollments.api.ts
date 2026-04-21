@@ -38,5 +38,11 @@ export const enrollmentsApi = {
   },
   delete: async (id: string): Promise<void> => {
     await apiClient(`/api/enrollments/${id}`, { method: 'DELETE' });
+  },
+  addPayment: async (billId: string, amount: number): Promise<{ success: boolean; message: string }> => {
+    return await apiClient<{ success: boolean; message: string }>(`/api/bills/${billId}/payments`, {
+      method: 'POST',
+      body: JSON.stringify({ amount }),
+    });
   }
 };

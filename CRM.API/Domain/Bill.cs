@@ -29,6 +29,7 @@ namespace CRM.API.Domain
         /// Remaining balance ( (InitialAmount + MedicineBillingAmount) - AmountPaid )
         /// </summary>
         public decimal PendingAmount { get; set; }
+        public string PaymentHistoryJson { get; set; } = "[]";
         public DateTime CreatedAt { get; set; }
         public bool IsDeleted { get; set; }
         public DateTime? DeletedAt { get; set; }

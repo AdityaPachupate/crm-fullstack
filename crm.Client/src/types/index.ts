@@ -122,6 +122,7 @@ export interface BillDto {
   pendingAmount: number;
   medicineBillingAmount: number;
   createdAt: string;
+  paymentHistoryJson: string;
 }
 
 export interface EnrollmentMedicineItem {
@@ -143,12 +144,14 @@ export interface EnrollmentDetailDto {
   isDeleted: boolean;
   deletedAt: string | null;
   createdAt: string;
+  billId: string | null;
   
   // Flattened financial fields
   initialAmount: number;
   medicineBillingAmount: number;
   amountPaid: number;
   pendingAmount: number;
+  paymentHistoryJson: string;
 
   medicineItems: EnrollmentMedicineItem[];
 }

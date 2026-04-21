@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { LookupBadge } from '@/components/ui/LookupBadge';
 import PageHeader from '@/components/layout/PageHeader';
 import { maskPhone, relativeDate, formatCurrency, todayStr } from '@/lib/helpers';
-import { Edit, CheckCircle, Pill, Phone, Globe, FileText, Calendar, Trash2, CheckCircle2, Plus } from 'lucide-react';
+import { Edit, CheckCircle, Pill, Phone, Globe, FileText, Calendar, Trash2, CheckCircle2, Plus, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLead, useUpdateLead, useDeleteLead } from '@/hooks/useLeads';
 import { BillDto, FollowUpDto, EnrollmentDto, RejoinRecordDto, LeadDetail as LeadDetailType, LeadStatus } from '@/types';
@@ -134,14 +134,37 @@ export default function LeadDetail() {
         color: 'text-status-converted'
       });
       
-      events.push({
-        type: 'payment',
-        date: e.bill.createdAt,
-        title: 'Payment Record Created',
-        description: `Total: ${formatCurrency(e.bill.packageAmount + e.bill.medicineBillingAmount)}`,
-        icon: FileText,
-        color: 'text-slate-600'
-      });
+      // Payment History from Bill
+      const bill = e.bill;
+      if (bill) {
+        let payments: { date: string, amount: number }[] = [];
+        try {
+          payments = JSON.parse(bill.paymentHistoryJson || '[]');
+        } catch (err) {
+          console.error("Failed to parse payment history", err);
+        }
+
+        // If AdvanceAmount > 0 but history is empty, show the initial payment
+        if (bill.advanceAmount > 0 && payments.length === 0) {
+          payments.push({ date: bill.createdAt, amount: bill.advanceAmount });
+        }
+
+        payments.forEach((p: any) => {
+          const amount = p.amount ?? p.Amount;
+          const date = p.date ?? p.Date;
+          
+          if (amount !== undefined) {
+            events.push({
+              type: 'payment',
+              date: date,
+              title: `₹${amount.toLocaleString()} Payment Received`,
+              description: `Part of ${e.packageName} balance`,
+              icon: CreditCard,
+              color: 'text-emerald-500'
+            });
+          }
+        });
+      }
     });
 
     // 4. Rejoins
@@ -155,14 +178,33 @@ export default function LeadDetail() {
         color: 'text-emerald-600'
       });
       
-      if (r.bill) {
-        events.push({
-          type: 'payment',
-          date: r.bill.createdAt,
-          title: 'Payment Record Created (Rejoin)',
-          description: `Total: ${formatCurrency(r.bill.packageAmount + r.bill.medicineBillingAmount)}`,
-          icon: FileText,
-          color: 'text-slate-600'
+      const bill = r.bill;
+      if (bill) {
+        let payments: any[] = [];
+        try {
+          payments = JSON.parse(bill.paymentHistoryJson || '[]');
+        } catch (err) {
+          console.error("Failed to parse rejoin payment history", err);
+        }
+
+        if (bill.advanceAmount > 0 && payments.length === 0) {
+          payments.push({ date: bill.createdAt, amount: bill.advanceAmount });
+        }
+
+        payments.forEach((p: any) => {
+          const amount = p.amount ?? p.Amount;
+          const date = p.date ?? p.Date;
+          
+          if (amount !== undefined) {
+            events.push({
+              type: 'payment',
+              date: date,
+              title: `₹${amount.toLocaleString()} Payment Received (Rejoin)`,
+              description: `Part of ${r.packageName} balance`,
+              icon: CreditCard,
+              color: 'text-emerald-500'
+            });
+          }
         });
       }
     });
@@ -588,9 +630,9 @@ export default function LeadDetail() {
       <AlertDialog open={!!deletingEnrollmentId} onOpenChange={(open) => !open && setDeletingEnrollmentId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove Enrollment?</AlertDialogTitle>
+            <AlertDialogTitle>Move Enrollment to Trash?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently remove the enrollment record and linked billing Information. This action cannot be undone.
+              This will move the enrollment record and linked billing Information to Trash. You can restore them later from the Trash section.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -599,7 +641,7 @@ export default function LeadDetail() {
               onClick={handleDeleteEnrollment}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Confirm Delete
+              Move to Trash
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

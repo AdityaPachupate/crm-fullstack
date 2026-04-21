@@ -49,7 +49,8 @@ namespace CRM.API.Features.Leads.GetLeadsById
                             e.Bill.AmountPaid,
                             e.Bill.PendingAmount,
                             e.Bill.MedicineBillingAmount,
-                            e.Bill.CreatedAt
+                            e.Bill.CreatedAt,
+                            e.Bill.PaymentHistoryJson
                         ) : null
                     )).ToList(),
                     l.RejoinRecords.Select(r => new RejoinRecordDto(
@@ -67,7 +68,8 @@ namespace CRM.API.Features.Leads.GetLeadsById
                             r.Bill.AmountPaid,
                             r.Bill.PendingAmount,
                             r.Bill.MedicineBillingAmount,
-                            r.Bill.CreatedAt
+                            r.Bill.CreatedAt,
+                            r.Bill.PaymentHistoryJson
                         ) : null
                     )).ToList()
                 ))

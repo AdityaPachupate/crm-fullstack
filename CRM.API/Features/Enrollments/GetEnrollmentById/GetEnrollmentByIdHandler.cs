@@ -31,12 +31,14 @@ namespace CRM.API.Features.Enrollments.GetEnrollmentById
                     e.IsDeleted,
                     e.DeletedAt,
                     e.CreatedAt,
+                    e.Bill != null ? e.Bill.Id : null,
                     
                     // Bill data (handling potential nulls for historical data)
                     e.Bill != null ? e.Bill.InitialAmount : 0,
                     e.Bill != null ? e.Bill.MedicineBillingAmount : 0,
                     e.Bill != null ? e.Bill.AmountPaid : 0,
                     e.Bill != null ? e.Bill.PendingAmount : 0,
+                    e.Bill != null ? e.Bill.PaymentHistoryJson : "[]",
                     e.Bill != null 
                         ? e.Bill.Items.Select(i => new EnrollmentMedicineItem(i.Medicine.Name, i.Quantity, i.UnitPriceSnapshot)).ToList() 
                         : new List<EnrollmentMedicineItem>()

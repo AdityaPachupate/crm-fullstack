@@ -19,12 +19,14 @@ namespace CRM.API.Features.Enrollments.GetEnrollmentById
         bool IsDeleted,
         DateTime? DeletedAt,
         DateTime CreatedAt,
+        Guid? BillId,
         
         // Financial Summary from linked Bill
         decimal InitialAmount,
         decimal MedicineBillingAmount,
         decimal AmountPaid,
         decimal PendingAmount,
+        string? PaymentHistoryJson,
 
         List<EnrollmentMedicineItem> MedicineItems
     );

@@ -53,9 +53,27 @@ export function useEnrollments() {
     }
   });
 
+  const addPayment = useMutation({
+    mutationFn: ({ billId, amount }: { billId: string; amount: number }) => 
+      enrollmentsApi.addPayment(billId, amount),
+    onSuccess: (result) => {
+      if (result.success) {
+        queryClient.invalidateQueries({ queryKey: ENROLLMENTS_QUERY_KEY });
+        queryClient.invalidateQueries({ queryKey: LEADS_QUERY_KEY });
+        toast.success(result.message || 'Payment recorded successfully');
+      } else {
+        toast.error(result.message || 'Failed to record payment');
+      }
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Error recording payment');
+    }
+  });
+
   return {
     createEnrollment,
     updateEnrollment,
     deleteEnrollment,
+    addPayment,
   };
 }
