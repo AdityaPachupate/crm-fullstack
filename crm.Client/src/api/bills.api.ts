@@ -21,5 +21,11 @@ export const billsApi = {
       method: 'POST',
       body: JSON.stringify({ amount }),
     });
+  },
+
+  deletePayment: async (billId: string, paymentId: string): Promise<{ success: boolean; message: string }> => {
+    return apiClient<{ success: boolean; message: string }>(`/api/bills/${billId}/payments/${paymentId}`, {
+      method: 'DELETE'
+    });
   }
 };

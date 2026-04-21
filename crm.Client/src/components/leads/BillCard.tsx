@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, ChevronUp, CreditCard, Pill, Printer, Plus } from 'lucide-react';
+import { ChevronDown, ChevronUp, CreditCard, Pill, Printer, Plus, Trash2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/helpers';
 import { cn } from '@/lib/utils';
-import { BillDetailDto } from '@/api/bills.api';
+import { BillDetailDto, billsApi } from '@/api/bills.api';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 interface BillCardProps {
   bill: BillDetailDto;
@@ -13,7 +15,29 @@ interface BillCardProps {
 }
 
 export function BillCard({ bill, onAddPayment, patientName }: BillCardProps) {
+  const queryClient = useQueryClient();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+
+  const handleDeleteTransaction = async (paymentId: string) => {
+    if (!window.confirm("Are you sure you want to delete this payment record? This will update the bill balance.")) return;
+    
+    setIsDeleting(paymentId);
+    try {
+      const result = await billsApi.deletePayment(bill.id, paymentId);
+      if (result.success) {
+        toast.success("Transaction deleted");
+        queryClient.invalidateQueries({ queryKey: ['bills'] });
+        queryClient.invalidateQueries({ queryKey: ['leads'] });
+      } else {
+        toast.error(result.message || "Failed to delete transaction");
+      }
+    } catch (error) {
+      toast.error("An error occurred");
+    } finally {
+      setIsDeleting(null);
+    }
+  };
   const pending = bill.pendingAmount;
   const isPaid = pending <= 0;
   
@@ -294,13 +318,32 @@ export function BillCard({ bill, onAddPayment, patientName }: BillCardProps) {
                     paymentHistory.map((p: any, idx) => {
                       const amount = p.amount ?? p.Amount ?? 0;
                       const date = p.date ?? p.Date ?? bill.createdAt;
+                      const pId = p.id ?? p.Id;
+                      
                       return (
-                        <div key={idx} className="flex items-center justify-between text-xs py-1.5 px-2 border-l-2 border-emerald-500 bg-emerald-50/10 ml-1">
+                        <div key={idx} className="flex items-center justify-between text-xs py-1.5 px-2 border-l-2 border-emerald-500 bg-emerald-50/10 ml-1 group/row">
                           <div className="flex flex-col">
                             <span className="font-medium text-slate-600">{new Date(date).toLocaleDateString()}</span>
                             {idx === 0 && <span className="text-[9px] text-emerald-600 font-bold uppercase">Initial Advance</span>}
                           </div>
-                          <span className="font-bold text-emerald-700">+{formatCurrency(amount)}</span>
+                          
+                          <div className="flex items-center gap-3">
+                            <span className="font-bold text-emerald-700">+{formatCurrency(amount)}</span>
+                            {pId && (
+                              <button 
+                                onClick={() => handleDeleteTransaction(pId)} 
+                                disabled={!!isDeleting}
+                                className="p-1 text-slate-400 hover:text-rose-500 transition-all disabled:opacity-50"
+                                title="Delete transaction"
+                              >
+                                {isDeleting === pId ? (
+                                  <div className="h-3.5 w-3.5 animate-spin border-2 border-slate-300 border-t-slate-500 rounded-full" />
+                                ) : (
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                )}
+                              </button>
+                            )}
+                          </div>
                         </div>
                       );
                     })

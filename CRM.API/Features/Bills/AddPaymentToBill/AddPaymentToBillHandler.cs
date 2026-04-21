@@ -7,7 +7,7 @@ using System.Text.Json;
 
 namespace CRM.API.Features.Bills.AddPaymentToBill;
 
-public record PaymentRecord(DateTime Date, decimal Amount);
+public record PaymentRecord(Guid Id, DateTime Date, decimal Amount);
 
 public class AddPaymentToBillHandler(
     AppDbContext db,
@@ -33,7 +33,13 @@ public class AddPaymentToBillHandler(
         var jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
         try 
         {
-            history = JsonSerializer.Deserialize<List<PaymentRecord>>(bill.PaymentHistoryJson ?? "[]", jsonOptions) ?? new();
+            var rawHistory = JsonSerializer.Deserialize<List<JsonElement>>(bill.PaymentHistoryJson ?? "[]", jsonOptions) ?? new();
+            history = rawHistory.Select(e => {
+                var date = e.TryGetProperty("date", out var dProp) ? dProp.GetDateTime() : bill.CreatedAt;
+                var amount = e.TryGetProperty("amount", out var aProp) ? aProp.GetDecimal() : 0;
+                var id = e.TryGetProperty("id", out var iProp) ? iProp.GetGuid() : Guid.NewGuid();
+                return new PaymentRecord(id, date, amount);
+            }).ToList();
         }
         catch 
         {
@@ -43,11 +49,11 @@ public class AddPaymentToBillHandler(
         // Backfill: If AmountPaid > 0 but history is empty, add the initial payment
         if (bill.AmountPaid > 0 && history.Count == 0)
         {
-            history.Add(new PaymentRecord(bill.CreatedAt, bill.AmountPaid));
+            history.Add(new PaymentRecord(Guid.NewGuid(), bill.CreatedAt, bill.AmountPaid));
         }
 
         // Add new payment
-        var newPayment = new PaymentRecord(DateTime.UtcNow, command.Request.Amount);
+        var newPayment = new PaymentRecord(Guid.NewGuid(), DateTime.UtcNow, command.Request.Amount);
         history.Add(newPayment);
 
         // Update totals
