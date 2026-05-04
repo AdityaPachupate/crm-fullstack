@@ -11,7 +11,6 @@ public record PaymentRecord(Guid Id, DateTime Date, decimal Amount);
 
 public class AddPaymentToBillHandler(
     AppDbContext db,
-    IBillRepository billRepository,
     ILogger<AddPaymentToBillHandler> logger
 ) : IRequestHandler<AddPaymentToBillCommand, AddPaymentToBillResponse>
 {

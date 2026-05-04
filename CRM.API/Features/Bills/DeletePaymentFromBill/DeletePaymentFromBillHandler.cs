@@ -8,7 +8,6 @@ namespace CRM.API.Features.Bills.DeletePaymentFromBill;
 
 public class DeletePaymentFromBillHandler(
     AppDbContext db,
-    IBillRepository billRepository,
     ILogger<DeletePaymentFromBillHandler> logger
 ) : IRequestHandler<DeletePaymentFromBillCommand, DeletePaymentFromBillResponse>
 {

@@ -70,9 +70,6 @@ else
     {
         var connBuilder = new Npgsql.NpgsqlConnectionStringBuilder(connectionString);
         
-        if (!connectionString.Contains("Trust Server Certificate", StringComparison.OrdinalIgnoreCase))
-            connBuilder.TrustServerCertificate = true;
-            
         if (!connectionString.Contains("Timeout", StringComparison.OrdinalIgnoreCase))
             connBuilder.Timeout = 60;
             

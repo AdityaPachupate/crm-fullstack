@@ -53,8 +53,8 @@ namespace CRM.API.Features.Leads.GetLeadsById
 
     public record BillDto(
         Guid Id,
-        decimal PackageAmount,
-        decimal AdvanceAmount,
+        decimal InitialAmount,
+        decimal AmountPaid,
         decimal PendingAmount,
         decimal MedicineBillingAmount,
         DateTime CreatedAt

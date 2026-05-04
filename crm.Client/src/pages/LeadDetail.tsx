@@ -106,6 +106,18 @@ export default function LeadDetail() {
 
     // 2. Follow-ups
     (lead?.followUps ?? []).forEach(f => {
+      if (f.source === 'System') {
+        events.push({
+          type: 'system_event',
+          date: f.createdAt,
+          title: 'System Note',
+          description: f.notes,
+          icon: FileText,
+          color: 'text-slate-500'
+        });
+        return; // Don't process as normal followup
+      }
+
       events.push({
         type: 'followup_created',
         date: f.createdAt,

@@ -37,6 +37,20 @@ namespace CRM.API.Features.Enrollments.DeleteEnrollment
                 enrollment.IsDeleted = true;
                 enrollment.DeletedAt = DateTime.UtcNow;
 
+                // Add a system follow-up to reflect the deletion in the timeline
+                var systemFollowUp = new CRM.API.Domain.FollowUp
+                {
+                    Id = Guid.NewGuid(),
+                    LeadId = enrollment.LeadId,
+                    FollowUpDate = DateOnly.FromDateTime(DateTime.UtcNow),
+                    Notes = $"Enrollment was deleted/cancelled.",
+                    Source = "System",
+                    Priority = CRM.API.Common.Enums.FollowUpPriority.Low,
+                    Status = CRM.API.Common.Enums.FollowUpStatus.Completed,
+                    CreatedAt = DateTime.UtcNow,
+                    CompletedAt = DateTime.UtcNow
+                };
+                db.FollowUps.Add(systemFollowUp);
 
                 // Detach the bill so it remains active for the lead but unlinked from the deleted enrollment.
                 await billRepository.DetachBillFromEnrollmentAsync(enrollment.Id, ct);

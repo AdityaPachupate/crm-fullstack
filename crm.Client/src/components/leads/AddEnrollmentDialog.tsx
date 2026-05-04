@@ -44,7 +44,7 @@ export function AddEnrollmentDialog({ isOpen, onClose, leadId, enrollment }: Add
     if (enrollment) {
       setPackageId(enrollment.packageId);
       setStartDate(new Date(enrollment.startDate));
-      setAmountPaid(enrollment.bill?.advanceAmount.toString() || '0');
+      setAmountPaid(enrollment.bill?.amountPaid.toString() || '0');
       // Note: Backend might not return medItems in EnrollmentDto directly, 
       // depends on the mapping in GetLeadsByIdHandler. In that handler, 
       // BillDto doesn't have medItems. This is a potential limitation.
