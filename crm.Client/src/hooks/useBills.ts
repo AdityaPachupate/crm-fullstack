@@ -1,16 +1,14 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { billsApi } from '@/api/bills.api';
+import { useQuery, useMutation, useQueryClient, UseQueryResult } from '@tanstack/react-query';
+import { billsApi, BillDetailDto } from '@/api/bills.api';
 import { toast } from 'sonner';
-
-import { BillDetailDto } from '@/api/bills.api';
 import { BillsResponse } from '@/types';
 
 export const BILLS_QUERY_KEY = ['bills'];
 
-export function useBills(): import('@tanstack/react-query').UseQueryResult<BillsResponse, Error>;
-export function useBills(leadId: string): import('@tanstack/react-query').UseQueryResult<BillDetailDto[], Error>;
-export function useBills(leadId?: string) {
-  return useQuery({
+export function useBills(): UseQueryResult<BillsResponse, Error>;
+export function useBills(leadId: string): UseQueryResult<BillDetailDto[], Error>;
+export function useBills(leadId?: string): UseQueryResult<any, Error> {
+  return useQuery<any, Error>({
     queryKey: leadId ? [...BILLS_QUERY_KEY, leadId] : BILLS_QUERY_KEY,
     queryFn: () => leadId ? billsApi.getLeadBills(leadId) : billsApi.getAllBills(),
   });
