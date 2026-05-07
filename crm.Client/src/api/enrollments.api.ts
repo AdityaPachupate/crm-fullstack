@@ -39,6 +39,9 @@ export const enrollmentsApi = {
   delete: async (id: string): Promise<void> => {
     await apiClient(`/api/enrollments/${id}`, { method: 'DELETE' });
   },
+  getAll: async (): Promise<{ items: any[]; totalCount: number }> => {
+    return await apiClient<{ items: any[]; totalCount: number }>('/api/enrollments');
+  },
   addPayment: async (billId: string, amount: number): Promise<{ success: boolean; message: string }> => {
     return await apiClient<{ success: boolean; message: string }>(`/api/bills/${billId}/payments`, {
       method: 'POST',

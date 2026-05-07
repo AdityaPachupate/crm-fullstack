@@ -13,6 +13,7 @@ import { useLead, useUpdateLead, useDeleteLead } from '@/hooks/useLeads';
 import { BillDto, FollowUpDto, EnrollmentDto, RejoinRecordDto, LeadDetail as LeadDetailType, LeadStatus } from '@/types';
 import { useFollowUps } from '@/hooks/useFollowUps';
 import { useEnrollments } from '@/hooks/useEnrollments';
+import { useRejoins } from '@/hooks/useRejoins';
 import { CompleteFollowUpDialog } from '@/components/leads/CompleteFollowUpDialog';
 import { AddEnrollmentDialog } from '@/components/leads/AddEnrollmentDialog';
 import { useBills, useAddPayment } from '@/hooks/useBills';
@@ -55,6 +56,10 @@ export default function LeadDetail() {
   const [editingEnrollment, setEditingEnrollment] = useState<EnrollmentDto | undefined>(undefined);
   const [deletingEnrollmentId, setDeletingEnrollmentId] = useState<string | null>(null);
 
+  // Rejoin Actions State
+  const { deleteRejoin } = useRejoins();
+  const [deletingRejoinId, setDeletingRejoinId] = useState<string | null>(null);
+
   // Lead Actions State
   const deleteLeadMutation = useDeleteLead();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -70,6 +75,7 @@ export default function LeadDetail() {
     [lead]
   );
   const leadEnrollments = lead?.enrollments ?? [];
+  const activeEnrollments = leadEnrollments.filter(e => !e.isDeleted);
   const leadRejoins = lead?.rejoinRecords ?? [];
 
   const leadBills = useMemo(
@@ -107,6 +113,8 @@ export default function LeadDetail() {
     // 2. Follow-ups
     (lead?.followUps ?? []).forEach(f => {
       if (f.source === 'System') {
+        if (f.notes?.includes('deleted/cancelled')) return; // handled by deleted enrollment timeline event below
+        
         events.push({
           type: 'system_event',
           date: f.createdAt,
@@ -148,17 +156,29 @@ export default function LeadDetail() {
         icon: CheckCircle,
         color: 'text-status-converted'
       });
+      
+      if (e.isDeleted && e.deletedAt) {
+        events.push({
+          type: 'enrollment_deleted',
+          date: e.deletedAt,
+          title: 'Enrollment deleted',
+          description: e.packageName,
+          icon: Trash2,
+          color: 'text-rose-500'
+        });
+      }
     });
 
     // 4. Rejoins (Static Events)
     leadRejoins.forEach(r => {
+      const isSettled = r.bill && r.bill.pendingAmount <= 0;
       events.push({
         type: 'rejoin',
-        date: r.startDate,
+        date: r.createdAt,
         title: 'Patient Rejoined',
-        description: `Restarted with ${r.packageName}`,
-        icon: Plus,
-        color: 'text-emerald-600'
+        description: `Restarted with ${r.packageName}${isSettled ? ' (Settled)' : ''}`,
+        icon: isSettled ? CheckCircle : Plus,
+        color: isSettled ? 'text-emerald-600' : 'text-blue-600'
       });
     });
 
@@ -208,7 +228,7 @@ export default function LeadDetail() {
   if (error) return <div className="p-8 text-center text-destructive">{(error as Error).message}</div>;
   if (!lead) return <div className="p-8 text-center text-muted-foreground">Patient not found</div>;
 
-  const hasEnrollment = leadEnrollments.some(e => e.startDate <= todayStr() && e.endDate >= todayStr());
+  const hasEnrollment = activeEnrollments.some(e => e.startDate <= todayStr() && e.endDate >= todayStr());
   const hasMedicine = leadBills.some(b => b.medicineBillingAmount > 0);
   
   const handleComplete = (data: any) => {
@@ -243,6 +263,16 @@ export default function LeadDetail() {
       setDeletingEnrollmentId(null);
     } catch (error) {
       toast.error("Failed to delete enrollment");
+    }
+  };
+
+  const handleDeleteRejoin = async () => {
+    if (!deletingRejoinId) return;
+    try {
+      await deleteRejoin.mutateAsync({ id: deletingRejoinId });
+      setDeletingRejoinId(null);
+    } catch (error) {
+      // Error handled by hook
     }
   };
 
@@ -498,7 +528,7 @@ export default function LeadDetail() {
               <Plus className="mr-1 h-3 w-3" /> New Enrollment
             </Button>
             
-            {leadEnrollments.map(e => (
+            {activeEnrollments.map(e => (
               <Link key={e.id} to={`/enrollments/${e.id}`} className="block">
                 <Card className="border shadow-none group relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer hover:border-status-converted/30 hover:bg-status-converted/5">
                   <CardContent className="p-4">
@@ -559,7 +589,7 @@ export default function LeadDetail() {
                 </Card>
               </Link>
             ))}
-            {leadEnrollments.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">No active enrollments</p>}
+            {activeEnrollments.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">No active enrollments</p>}
           </TabsContent>
 
           <TabsContent value="bills" className="mt-5 space-y-3">
@@ -583,11 +613,64 @@ export default function LeadDetail() {
           </TabsContent>
 
           <TabsContent value="rejoins" className="mt-5 space-y-2">
+            <Link to={`/rejoins/new?leadId=${id}`}>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full rounded-full text-xs border-dashed border-emerald-600/50 text-emerald-600 hover:bg-emerald-50 shadow-sm"
+              >
+                <Plus className="mr-1 h-3 w-3" /> New Rejoin
+              </Button>
+            </Link>
+            
             {leadRejoins.map(r => (
-              <Card key={r.id} className="border shadow-none">
+              <Card key={r.id} className="border shadow-none hover:bg-muted/30 transition-colors">
                 <CardContent className="p-4">
-                  <p className="text-sm font-medium">{r.packageName}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{r.startDate} → {r.endDate}</p>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-slate-900">{r.packageName}</p>
+                      <p className="text-[10px] font-medium text-muted-foreground mt-0.5 uppercase tracking-wider">
+                        {new Date(r.startDate).toLocaleDateString()} → {new Date(r.endDate).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-7 w-7 rounded-full text-slate-400 hover:text-destructive hover:bg-destructive/5"
+                      onClick={(evt) => { 
+                        evt.preventDefault(); 
+                        setDeletingRejoinId(r.id); 
+                      }}
+                    >
+                      <Trash2 size={14} />
+                    </Button>
+                  </div>
+                  
+                  <div className="mt-3 pt-3 border-t flex items-center justify-between">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-bold text-emerald-600">{formatCurrency(r.packageCostSnapshot)}</span>
+                      {r.bill && (
+                        <span className={cn(
+                          "text-[10px] font-bold uppercase",
+                          r.bill.pendingAmount <= 0 ? "text-emerald-600" : "text-rose-600"
+                        )}>
+                          {r.bill.pendingAmount <= 0 ? 'Paid' : `${formatCurrency(r.bill.pendingAmount)} Due`}
+                        </span>
+                      )}
+                    </div>
+                    {r.bill && r.bill.pendingAmount > 0 && (
+                      <Button 
+                        size="sm" 
+                        className="h-7 px-3 text-[10px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-full transition-transform active:scale-95 shadow-md shadow-indigo-100"
+                        onClick={(evt) => { 
+                          evt.preventDefault(); 
+                          handleOpenAddPayment(r.bill!.id); 
+                        }}
+                      >
+                        <Plus className="h-3 w-3 mr-1" /> Add Payment
+                      </Button>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -648,6 +731,26 @@ export default function LeadDetail() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleDeleteEnrollment}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Move to Trash
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!deletingRejoinId} onOpenChange={(open) => !open && setDeletingRejoinId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Move Rejoin to Trash?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will move the rejoin record and its associated bill to Trash. The patient's total due will be updated automatically.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteRejoin}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Move to Trash

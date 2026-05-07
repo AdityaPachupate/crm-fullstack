@@ -5,5 +5,5 @@ using System.Threading.Tasks;
 
 namespace CRM.API.Features.Bills.DeleteBill
 {
-    public record DeleteBillResponse(bool IsDeleted);
+    public record DeleteBillResponse(bool Success);
 }

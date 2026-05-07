@@ -22,6 +22,10 @@ export const billsApi = {
     return apiClient<BillDetailDto[]>(`/api/leads/${leadId}/bills`);
   },
 
+  getAllBills: async (): Promise<BillDetailDto[]> => {
+    return apiClient<BillDetailDto[]>('/api/bills');
+  },
+
   addPayment: async (billId: string, amount: number): Promise<{ success: boolean; message: string }> => {
     return apiClient<{ success: boolean; message: string }>(`/api/bills/${billId}/payments`, {
       method: 'POST',
@@ -33,6 +37,12 @@ export const billsApi = {
     const url = `/api/bills/${billId}/payments/${paymentId}${isHard ? '?hard=true' : ''}`;
     return apiClient<{ success: boolean; message: string }>(url, {
       method: 'DELETE'
+    });
+  },
+
+  deleteBill: async (billId: string, isPermanent: boolean = false): Promise<{ success: boolean }> => {
+    return apiClient<{ success: boolean }>(`/api/bills/${billId}${isPermanent ? '?isPermanent=true' : ''}`, {
+      method: 'DELETE',
     });
   }
 };

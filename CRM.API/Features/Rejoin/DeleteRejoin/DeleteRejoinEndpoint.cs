@@ -11,7 +11,7 @@ public class DeleteRejoinEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapDelete("/api/rejoins/{id}", async (Guid id, IMediator mediator, CancellationToken cancellationToken, [FromQuery] bool isPermanent = false) =>
+        app.MapDelete("/rejoins/{id:guid}", async (Guid id, IMediator mediator, CancellationToken cancellationToken, [FromQuery] bool isPermanent = false) =>
         {
             var request = new DeleteRejoinRequest(id, isPermanent);
             var result = await mediator.Send(new DeleteRejoinCommand(request), cancellationToken);
@@ -22,6 +22,17 @@ public class DeleteRejoinEndpoint : IEndpoint
         .Produces<DeleteRejoinResponse>(StatusCodes.Status200OK)
         .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
         .Produces<ProblemDetails>(StatusCodes.Status404NotFound)
-        .WithSummary("Soft delete a custom rejoin record");
+        .WithSummary("Delete a rejoin record");
+
+        app.MapPost("/rejoin-records/{id}/trash", async (Guid id, IMediator mediator, CancellationToken cancellationToken) =>
+        {
+            var request = new DeleteRejoinRequest(id, false);
+            var result = await mediator.Send(new DeleteRejoinCommand(request), cancellationToken);
+            return Results.Ok(result);
+        })
+        .WithName("TrashRejoin")
+        .WithTags("Rejoins")
+        .Produces<DeleteRejoinResponse>(StatusCodes.Status200OK)
+        .WithSummary("Move a rejoin record to trash");
     }
 }

@@ -1,12 +1,13 @@
 import { Link } from 'react-router-dom';
-import { Package, Pill, RefreshCw, Settings, Trash2, Receipt, ChevronRight } from 'lucide-react';
+import { Package, Pill, RefreshCw, Settings, Trash2, Receipt, ChevronRight, Plus } from 'lucide-react';
 
 const items = [
   { to: '/packages', label: 'Packages', desc: 'Treatment packages catalog', icon: Package },
   { to: '/medicines', label: 'Medicines', desc: 'Medicine inventory', icon: Pill },
   { to: '/enrollments', label: 'Enrollments', desc: 'Patient enrollments', icon: Receipt },
   { to: '/bills/new', label: 'Create Bill', desc: 'Standalone billing', icon: Receipt },
-  { to: '/rejoins', label: 'Rejoins', desc: 'Returning patients', icon: RefreshCw },
+  { to: '/rejoins', label: 'Rejoins', desc: 'Returning patients list', icon: RefreshCw },
+  { to: '/rejoins/new', label: 'Create Rejoin', desc: 'Add returning patient', icon: Plus },
   { to: '/settings/lookups', label: 'Configure Dropdowns', desc: 'Patient sources & reasons', icon: Settings },
   { to: '/trash', label: 'Trash', desc: 'Deleted items', icon: Trash2 },
 ];

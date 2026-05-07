@@ -36,7 +36,9 @@ namespace CRM.API.Features.Leads.GetLeadsById
         DateOnly StartDate,
         DateOnly EndDate,
         DateTime CreatedAt,
-        BillDto? Bill
+        BillDto? Bill,
+        bool IsDeleted,
+        DateTime? DeletedAt
     );
 
     public record RejoinRecordDto(

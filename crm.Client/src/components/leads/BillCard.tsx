@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, ChevronUp, CreditCard, Pill, Printer, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, CreditCard, Pill, Printer, Plus, Trash2, CheckCircle } from 'lucide-react';
 import { formatCurrency } from '@/lib/helpers';
 import { cn } from '@/lib/utils';
 import { BillDetailDto, billsApi } from '@/api/bills.api';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useAddPayment, useDeleteBill } from '@/hooks/useBills';
 
 interface BillCardProps {
   bill: BillDetailDto;
@@ -18,29 +19,62 @@ export function BillCard({ bill, onAddPayment, patientName }: BillCardProps) {
   const queryClient = useQueryClient();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  
+  const addPaymentMutation = useAddPayment();
+  const deleteBillMutation = useDeleteBill();
 
-  const handleDeleteTransaction = async (paymentId: string, isHard: boolean = false) => {
-    const confirmMsg = isHard 
-      ? "Are you sure you want to PERMANENTLY delete this record? This cannot be undone." 
-      : "Move this transaction to trash? It will be removed from your totals.";
-      
-    if (!window.confirm(confirmMsg)) return;
-    
-    setIsDeleting(paymentId);
-    try {
-      const result = await billsApi.deletePayment(bill.id, paymentId, isHard);
-      if (result.success) {
-        toast.success(isHard ? "Permanently deleted" : "Moved to trash");
-        queryClient.invalidateQueries({ queryKey: ['bills'] });
-        queryClient.invalidateQueries({ queryKey: ['leads'] });
-      } else {
-        toast.error(result.message || "Failed to delete transaction");
+  const isProcessing = addPaymentMutation.isPending || deleteBillMutation.isPending;
+
+  const handleDeleteTransaction = (paymentId: string, isHard: boolean = false) => {
+    const title = isHard ? "Permanently delete record?" : "Move transaction to trash?";
+    const description = isHard ? "This cannot be undone." : "It will be removed from your totals.";
+
+    toast(title, {
+      description,
+      action: {
+        label: isHard ? "Delete Permanently" : "Move to Trash",
+        onClick: async () => {
+          setIsDeleting(paymentId);
+          try {
+            const result = await billsApi.deletePayment(bill.id, paymentId, isHard);
+            if (result.success) {
+              toast.success(isHard ? "Permanently deleted" : "Moved to trash");
+              queryClient.invalidateQueries({ queryKey: ['bills'] });
+              queryClient.invalidateQueries({ queryKey: ['leads'] });
+            } else {
+              toast.error(result.message || "Failed to delete transaction");
+            }
+          } catch (error) {
+            toast.error("An error occurred");
+          } finally {
+            setIsDeleting(null);
+          }
+        }
       }
-    } catch (error) {
-      toast.error("An error occurred");
-    } finally {
-      setIsDeleting(null);
-    }
+    });
+  };
+
+  const handleMarkAsPaid = () => {
+    toast(`Mark bill as fully paid?`, {
+      description: `This will record a payment of ${formatCurrency(bill.pendingAmount)}.`,
+      action: {
+        label: "Confirm Payment",
+        onClick: () => addPaymentMutation.mutate({ 
+          billId: bill.id, 
+          amount: bill.pendingAmount 
+        })
+      }
+    });
+  };
+
+  const handleDeleteBill = () => {
+    toast("Move entire bill to trash?", {
+      description: "You can restore it later from the trash section.",
+      action: {
+        label: "Move to Trash",
+        onClick: () => deleteBillMutation.mutate(bill.id)
+      }
+    });
   };
 
   const pending = bill.pendingAmount;
@@ -220,15 +254,30 @@ export function BillCard({ bill, onAddPayment, patientName }: BillCardProps) {
             )}>
               {isPaid ? 'Settled' : `${formatCurrency(pending)} Due`}
             </span>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-8 w-8 rounded-full text-slate-400 hover:text-indigo-600 hover:bg-indigo-50"
-              onClick={handlePrint}
-              title="Print Receipt"
-            >
-              <Printer className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 rounded-full text-slate-400 hover:text-indigo-600 hover:bg-indigo-50"
+                onClick={handlePrint}
+                title="Print Receipt"
+              >
+                <Printer className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className={cn(
+                  "h-8 w-8 rounded-full text-slate-300 hover:text-destructive hover:bg-destructive/5 transition-colors",
+                  isProcessing && "animate-pulse"
+                )}
+                onClick={handleDeleteBill}
+                disabled={isProcessing}
+                title="Delete Bill"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -246,13 +295,25 @@ export function BillCard({ bill, onAddPayment, patientName }: BillCardProps) {
           </div>
           
           {!isPaid && (
-            <Button 
-              size="sm" 
-              className="h-7 px-3 text-[10px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-full transition-transform active:scale-95"
-              onClick={() => onAddPayment(bill.id)}
-            >
-              <Plus className="h-3 w-3 mr-1" /> Add Payment
-            </Button>
+            <div className="flex flex-col gap-1.5 ml-4">
+              <Button 
+                size="sm" 
+                variant="outline"
+                className="h-7 px-3 text-[10px] font-bold text-emerald-600 border-emerald-100 hover:bg-emerald-50 rounded-full transition-transform active:scale-95 w-full whitespace-nowrap"
+                onClick={handleMarkAsPaid}
+                disabled={isProcessing}
+              >
+                <CheckCircle className="h-3 w-3 mr-1" /> Mark as Paid
+              </Button>
+              <Button 
+                size="sm" 
+                className="h-7 px-3 text-[10px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-full transition-transform active:scale-95 w-full whitespace-nowrap"
+                onClick={() => onAddPayment(bill.id)}
+                disabled={isProcessing}
+              >
+                <Plus className="h-3 w-3 mr-1" /> Add Payment
+              </Button>
+            </div>
           )}
         </div>
 

@@ -28,8 +28,9 @@ namespace CRM.API.Features.Enrollments.DeleteEnrollment
             if (command.IsPermanent)
             {
                 // Hard Delete
+                await billRepository.DeleteBillByEnrollmentAsync(enrollment.Id, true, ct);
                 db.Enrollments.Remove(enrollment);
-                logger.LogInformation("Enrollment {EnrollmentId} deleted permanently", command.Request.Id);
+                logger.LogInformation("Enrollment {EnrollmentId} and associated bill deleted permanently", command.Request.Id);
             }
             else
             {
@@ -52,10 +53,10 @@ namespace CRM.API.Features.Enrollments.DeleteEnrollment
                 };
                 db.FollowUps.Add(systemFollowUp);
 
-                // Detach the bill so it remains active for the lead but unlinked from the deleted enrollment.
-                await billRepository.DetachBillFromEnrollmentAsync(enrollment.Id, ct);
+                // Soft-delete the associated bill so it no longer appears in the active balance.
+                await billRepository.DeleteBillByEnrollmentAsync(enrollment.Id, false, ct);
 
-                logger.LogInformation("Enrollment {EnrollmentId} trashed. Bill detached but preserved.", command.Request.Id);
+                logger.LogInformation("Enrollment {EnrollmentId} trashed. Associated bill moved to Trash.", command.Request.Id);
             }
 
             await db.SaveChangesAsync(ct);

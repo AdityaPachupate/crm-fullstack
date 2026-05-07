@@ -67,6 +67,7 @@ public class CreateRejoinHandler(AppDbContext db, ILogger<CreateRejoinHandler> l
             RejoinRecordId = rejoinRecord.Id,
             InitialAmount = package.Cost,
             AmountPaid = 0, // No payment accepted at this simple endpoint step
+            PendingAmount = package.Cost, // Set pending amount to initial cost
             CreatedAt = DateTime.UtcNow
         };
 

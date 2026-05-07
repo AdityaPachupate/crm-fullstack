@@ -12,9 +12,10 @@ namespace CRM.API.Features.Leads.GetLeadsById
         public async Task<GetLeadsByIdResponse> Handle(GetLeadsByIdQuery query, CancellationToken cancellationToken)
         {
             var lead = await db.Leads
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .AsSplitQuery()
-                .Where(l => l.Id == query.Id)
+                .Where(l => l.Id == query.Id && !l.IsDeleted)
                 .Select(l => new GetLeadsByIdResponse(
                     l.Id,
                     l.Name,
@@ -24,7 +25,7 @@ namespace CRM.API.Features.Leads.GetLeadsById
                     l.Reason,
                     l.CreatedAt,
                     l.UpdatedAt,
-                    l.FollowUps.Select(f => new FollowUpDto(
+                    l.FollowUps.Where(f => !f.IsDeleted).Select(f => new FollowUpDto(
                         f.Id,
                         f.FollowUpDate,
                         f.Notes,
@@ -43,16 +44,18 @@ namespace CRM.API.Features.Leads.GetLeadsById
                         e.StartDate,
                         e.EndDate,
                         e.CreatedAt,
-                        e.Bill != null ? new BillDto(
+                        e.Bill != null && !e.Bill.IsDeleted ? new BillDto(
                             e.Bill.Id,
                             e.Bill.InitialAmount,
                             e.Bill.AmountPaid,
                             e.Bill.PendingAmount,
                             e.Bill.MedicineBillingAmount,
                             e.Bill.CreatedAt
-                        ) : null
+                        ) : null,
+                        e.IsDeleted,
+                        e.DeletedAt
                     )).ToList(),
-                    l.RejoinRecords.Select(r => new RejoinRecordDto(
+                    l.RejoinRecords.Where(r => !r.IsDeleted).Select(r => new RejoinRecordDto(
                         r.Id,
                         r.PackageId,
                         r.Package != null ? r.Package.Name : "N/A",
@@ -61,7 +64,7 @@ namespace CRM.API.Features.Leads.GetLeadsById
                         r.StartDate,
                         r.EndDate,
                         r.CreatedAt,
-                        r.Bill != null ? new BillDto(
+                        r.Bill != null && !r.Bill.IsDeleted ? new BillDto(
                             r.Bill.Id,
                             r.Bill.InitialAmount,
                             r.Bill.AmountPaid,

@@ -165,6 +165,8 @@ export interface EnrollmentDto {
   endDate: string;
   createdAt: string;
   bill: BillDto | null;
+  isDeleted: boolean;
+  deletedAt: string | null;
 }
 
 export interface RejoinRecordDto {
@@ -198,6 +200,13 @@ export interface LeadsParams {
 
 export interface LeadsResponse {
   items: Lead[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
+  totalPages: number;
+}
+export interface EnrollmentsResponse {
+  items: EnrollmentDto[];
   totalCount: number;
   pageNumber: number;
   pageSize: number;

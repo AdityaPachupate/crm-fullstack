@@ -11,7 +11,7 @@ interface CRMState {
   medicines: Medicine[];
   enrollments: Enrollment[];
   bills: Bill[];
-  rejoins: Rejoin[];
+  bills: Bill[];
   lookups: LookupValue[];
   loading: boolean;
   error: string | null;
@@ -51,11 +51,7 @@ interface CRMContextType extends CRMState {
   softDeleteBill: (id: string) => void;
   restoreBill: (id: string) => void;
   hardDeleteBill: (id: string) => void;
-  // Rejoins
-  addRejoin: (r: Omit<Rejoin, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>) => Rejoin;
-  softDeleteRejoin: (id: string) => void;
-  restoreRejoin: (id: string) => void;
-  hardDeleteRejoin: (id: string) => void;
+  hardDeleteBill: (id: string) => void;
   // Lookups
   addLookup: (l: Omit<LookupValue, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>) => LookupValue;
   updateLookup: (id: string, l: Partial<LookupValue>) => void;
@@ -91,7 +87,7 @@ function loadState(): CRMState {
     medicines: [],
     enrollments: [],
     bills: [],
-    rejoins: [],
+    bills: [],
     lookups: defaultLookups.map(l => ({ ...l, id: generateId(), createdAt: ts, updatedAt: ts, deletedAt: null })),
     loading: false,
     error: null,
@@ -191,7 +187,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
 
   // Generic helpers
   // Generic helpers for array-based state
-  type ArrayStateKeys = 'leads' | 'followUps' | 'packages' | 'medicines' | 'enrollments' | 'bills' | 'rejoins' | 'lookups';
+  type ArrayStateKeys = 'leads' | 'followUps' | 'packages' | 'medicines' | 'enrollments' | 'bills' | 'lookups';
 
   const softDelete = <K extends ArrayStateKeys>(key: K, id: string) =>
     update(key, arr => (arr as any[]).map((item: any) => item.id === id ? { ...item, deletedAt: now(), updatedAt: now() } : item) as CRMState[K]);
@@ -332,14 +328,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     restoreBill: (id) => restore('bills', id),
     hardDeleteBill: (id) => hardDelete('bills', id),
 
-    addRejoin: (r) => {
-      const rejoin: Rejoin = { ...r, id: generateId(), createdAt: now(), updatedAt: now(), deletedAt: null };
-      update('rejoins', arr => [...arr, rejoin]);
-      return rejoin;
-    },
-    softDeleteRejoin: (id) => softDelete('rejoins', id),
-    restoreRejoin: (id) => restore('rejoins', id),
-    hardDeleteRejoin: (id) => hardDelete('rejoins', id),
+    hardDeleteBill: (id: string) => hardDelete('bills', id),
 
     addLookup: (l) => {
       const lookup: LookupValue = { ...l, id: generateId(), createdAt: now(), updatedAt: now(), deletedAt: null };

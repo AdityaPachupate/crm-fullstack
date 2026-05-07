@@ -1,14 +1,24 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { useCRM } from '@/context/CRMContext';
 import { Card, CardContent } from '@/components/ui/card';
-import { Users, CalendarCheck, PhoneCall, DollarSign, ChevronRight } from 'lucide-react';
+import { Users, CalendarCheck, PhoneCall, DollarSign, ChevronRight, Loader2 } from 'lucide-react';
 import { formatCurrency, isToday, isPast, todayStr } from '@/lib/helpers';
-
+import { useLeads } from '@/hooks/useLeads';
+import { useBills } from '@/hooks/useBills';
+import { useFollowUps } from '@/hooks/useFollowUps';
+import { useEnrollments } from '@/hooks/useEnrollments';
 import { getStaticLookup } from '@/lib/lookup-registry';
 
 export default function Dashboard() {
-  const { leads, enrollments, followUps, bills } = useCRM();
+  const { data: leadsData, isLoading: leadsLoading } = useLeads();
+  const { data: billsData, isLoading: billsLoading } = useBills(); // Assuming useBills can fetch all if no ID
+  const { data: followUpsData, isLoading: followUpsLoading } = useFollowUpsToday();
+  const { data: enrollmentsData, isLoading: enrollmentsLoading } = useAllEnrollments();
+
+  const leads = leadsData?.items || [];
+  const bills = billsData || [];
+  const followUps = followUpsData || [];
+  const enrollments = enrollmentsData?.items || [];
 
   const activeLeads = leads.filter(l => !l.deletedAt);
   const activeEnrollments = enrollments.filter(e => !e.deletedAt && e.startDate <= todayStr() && e.endDate >= todayStr());
@@ -21,29 +31,31 @@ export default function Dashboard() {
         const bOverdue = isPast(b.followUpDate) && !isToday(b.followUpDate) ? 1 : 0;
         if (bOverdue !== aOverdue) return bOverdue - aOverdue;
         const pMap = { High: 3, Medium: 2, Low: 1 };
-        return pMap[b.priority] - pMap[a.priority];
+        return pMap[b.priority as keyof typeof pMap] - pMap[a.priority as keyof typeof pMap];
       });
   }, [followUps]);
 
   const overdueCount = todayFollowUps.filter(f => isPast(f.followUpDate) && !isToday(f.followUpDate)).length;
 
   const pendingBilling = useMemo(() => {
-    return bills.filter(b => !b.deletedAt).reduce((sum, b) => {
-      const medTotal = b.medicineItems.reduce((s, m) => s + m.quantity * m.unitPriceAtSale, 0);
-      return sum + (b.packageAmount + medTotal - b.amountPaid);
-    }, 0);
+    return bills.filter(b => !b.deletedAt).reduce((sum, b) => sum + b.pendingAmount, 0);
   }, [bills]);
+
+  const isLoading = leadsLoading || billsLoading || followUpsLoading || enrollmentsLoading;
 
   const greeting = new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 17 ? 'Good afternoon' : 'Good evening';
 
   return (
     <div className="p-5 space-y-6">
       {/* Greeting */}
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">{greeting} !</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          Here's your clinic hub for today, <span className="text-foreground font-medium">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</span>.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight">{greeting} !</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Here's your clinic hub for today.
+          </p>
+        </div>
+        {isLoading && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
       </div>
 
       {/* Metric Cards */}

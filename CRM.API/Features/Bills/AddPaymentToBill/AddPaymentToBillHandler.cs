@@ -20,6 +20,7 @@ public class AddPaymentToBillHandler(
         {
             // 1. Fetch the bill without complex includes to avoid tracking bloat
             var bill = await db.Bills
+                .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(b => b.Id == command.Id, ct);
 
             if (bill == null)

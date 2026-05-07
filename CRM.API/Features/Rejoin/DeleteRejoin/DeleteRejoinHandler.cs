@@ -27,12 +27,14 @@ public class DeleteRejoinHandler(AppDbContext db, IBillRepository billRepository
 
         if (command.Request.IsPermanent)
         {
-            // Detach the bill so it remains active for the lead but unlinked before the rejoin record is permanently wiped.
-            // This ensures financial analysis remains accurate even after a hard delete.
-            await billRepository.DetachBillFromRejoinAsync(record.Id, ct);
+            // Permanent Delete
+            if (record.Bill != null)
+            {
+                db.Bills.Remove(record.Bill);
+            }
 
             db.RejoinRecords.Remove(record);
-            logger.LogInformation("{Message}: RejoinRecord {Id} hard deleted. Bill detached and preserved.", LoggingMessages.ResourceUpdated, record.Id);
+            logger.LogInformation("{Message}: RejoinRecord {Id} and its bill hard deleted.", LoggingMessages.ResourceUpdated, record.Id);
         }
         else
         {
@@ -40,11 +42,14 @@ public class DeleteRejoinHandler(AppDbContext db, IBillRepository billRepository
             record.IsDeleted = true;
             record.DeletedAt = DateTime.UtcNow;
 
-            // Detach the bill so it remains active for the lead but unlinked from the trashed rejoin record.
-            // This preserves the financial record for analysis.
-            await billRepository.DetachBillFromRejoinAsync(record.Id, ct);
+            // Soft delete the bill as well so it doesn't count towards the total due
+            if (record.Bill != null)
+            {
+                record.Bill.IsDeleted = true;
+                record.Bill.DeletedAt = DateTime.UtcNow;
+            }
 
-            logger.LogInformation("{Message}: RejoinRecord {Id} trashed. Bill detached but preserved.", LoggingMessages.ResourceUpdated, record.Id);
+            logger.LogInformation("{Message}: RejoinRecord {Id} and its bill trashed.", LoggingMessages.ResourceUpdated, record.Id);
         }
 
         await db.SaveChangesAsync(ct);

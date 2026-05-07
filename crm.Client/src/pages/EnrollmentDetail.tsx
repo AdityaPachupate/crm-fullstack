@@ -110,7 +110,12 @@ export default function EnrollmentDetail() {
             </h3>
             <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
               <DialogTrigger asChild>
-                <Button size="sm" variant="outline" className="h-7 text-[10px] font-bold uppercase tracking-tight bg-white hover:bg-emerald-600 hover:text-white border-emerald-200">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="h-7 text-[10px] font-bold uppercase tracking-tight bg-white hover:bg-emerald-600 hover:text-white border-emerald-200"
+                  disabled={enrollment.isDeleted}
+                >
                   <Plus className="h-3 w-3 mr-1" /> Record Payment
                 </Button>
               </DialogTrigger>

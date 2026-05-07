@@ -1,6 +1,5 @@
-import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useCRM } from '@/context/CRMContext';
+import { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -14,54 +13,72 @@ import { CalendarIcon, AlertTriangle, CheckCircle, Search } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useLeads, useLead } from '@/hooks/useLeads';
+import { usePackages } from '@/hooks/usePackages';
+import { useRejoins } from '@/hooks/useRejoins';
 
 export default function CreateRejoin() {
-  const { leads, packages, enrollments, addRejoin, addBill } = useCRM();
   const navigate = useNavigate();
-  const [step, setStep] = useState(1);
+  const [searchParams] = useSearchParams();
+  const preFilledLeadId = searchParams.get('leadId');
 
-  const activeLeads = leads.filter(l => !l.deletedAt);
-  const activePackages = packages.filter(p => !p.deletedAt);
-  const today = todayStr();
-
-  const [leadId, setLeadId] = useState('');
+  const [step, setStep] = useState(preFilledLeadId ? 2 : 1);
   const [leadSearch, setLeadSearch] = useState('');
+  const [leadId, setLeadId] = useState(preFilledLeadId || '');
   const [packageId, setPackageId] = useState('');
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [rejoinId, setRejoinId] = useState('');
 
-  const selectedLead = activeLeads.find(l => l.id === leadId);
+  useEffect(() => {
+    if (preFilledLeadId) {
+      setLeadId(preFilledLeadId);
+      setStep(2);
+    }
+  }, [preFilledLeadId]);
+
+  // Hooks
+  const { data: leadsData, isLoading: leadsLoading } = useLeads({ search: leadSearch, pageSize: 20 });
+  const { data: selectedLeadDetail } = useLead(leadId);
+  const { data: packagesData } = usePackages();
+  const { createRejoin } = useRejoins();
+
+  const activeLeads = leadsData?.items || [];
+  const activePackages = packagesData || [];
+  const today = todayStr();
+
+  const selectedLead = activeLeads.find(l => l.id === leadId) || (selectedLeadDetail as any);
   const selectedPkg = activePackages.find(p => p.id === packageId);
   const endDateStr = startDate && selectedPkg ? addDays(startDate.toISOString().split('T')[0], selectedPkg.durationDays) : '';
 
   const hasActiveEnrollment = useMemo(() => {
-    if (!leadId) return false;
-    return enrollments.some(e => !e.deletedAt && e.leadId === leadId && e.startDate <= today && e.endDate >= today);
-  }, [leadId, enrollments, today]);
+    if (!selectedLeadDetail || !startDate) return false;
+    const startStr = startDate.toISOString().split('T')[0];
+    return selectedLeadDetail.enrollments?.some(e => !e.isDeleted && e.endDate >= startStr);
+  }, [selectedLeadDetail, startDate]);
 
   const lastEnrollment = useMemo(() => {
-    if (!leadId) return null;
-    const sorted = enrollments.filter(e => e.leadId === leadId && !e.deletedAt).sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime());
+    if (!selectedLeadDetail) return null;
+    const sorted = [...(selectedLeadDetail.enrollments || [])]
+      .filter(e => !e.isDeleted)
+      .sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime());
     return sorted[0] || null;
-  }, [leadId, enrollments]);
+  }, [selectedLeadDetail]);
 
-  const filteredLeads = activeLeads.filter(l => !leadSearch || l.name.toLowerCase().includes(leadSearch.toLowerCase()));
-
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!selectedLead || !selectedPkg || !startDate) return;
     const start = startDate.toISOString().split('T')[0];
-    const end = addDays(start, selectedPkg.durationDays);
-    const rejoin = addRejoin({
-      leadId, packageId, packageName: selectedPkg.name, packageCost: selectedPkg.cost,
-      packageDuration: selectedPkg.durationDays, startDate: start, endDate: end,
-    });
-    addBill({
-      leadId, enrollmentId: null, rejoinId: rejoin.id,
-      packageAmount: selectedPkg.cost, amountPaid: 0, medicineItems: [],
-    });
-    setRejoinId(rejoin.id);
-    setStep(4);
-    toast.success('Rejoin created');
+    
+    try {
+      const result = await createRejoin.mutateAsync({
+        leadId,
+        packageId,
+        startDate: start,
+      });
+      setRejoinId(result.id);
+      setStep(4);
+    } catch (err) {
+      // Error handled by hook
+    }
   };
 
   return (
@@ -84,11 +101,14 @@ export default function CreateRejoin() {
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input placeholder="Search leads..." value={leadSearch} onChange={e => setLeadSearch(e.target.value)} className="pl-9 h-9 bg-muted border-0 rounded-lg text-sm" />
             </div>
-            <div className="divide-y rounded-lg border">
-              {filteredLeads.map(l => (
+            <div className="divide-y rounded-lg border max-h-[400px] overflow-y-auto">
+              {leadsLoading && <p className="p-4 text-center text-sm text-muted-foreground">Searching...</p>}
+              {!leadsLoading && activeLeads.length === 0 && <p className="p-4 text-center text-sm text-muted-foreground">No leads found</p>}
+              {activeLeads.map(l => (
                 <div key={l.id} className={`px-4 py-3 cursor-pointer transition-colors ${leadId === l.id ? 'bg-primary/5 border-l-2 border-l-primary' : 'hover:bg-muted/50'}`} onClick={() => setLeadId(l.id)}>
                   <p className="text-sm font-medium">{l.name}</p>
-                  {lastEnrollment && l.id === leadId && <p className="text-xs text-muted-foreground">Last enrollment ended: {lastEnrollment.endDate}</p>}
+                  <p className="text-xs text-muted-foreground">{l.phone}</p>
+                  {lastEnrollment && l.id === leadId && <p className="text-xs text-status-converted mt-1">Last enrollment ended: {lastEnrollment.endDate}</p>}
                 </div>
               ))}
             </div>
@@ -100,7 +120,7 @@ export default function CreateRejoin() {
           <div className="space-y-5">
             {hasActiveEnrollment && (
               <div className="flex items-center gap-2 rounded-lg bg-status-contacted/5 border border-status-contacted/20 p-3 text-sm text-status-contacted">
-                <AlertTriangle className="h-4 w-4 shrink-0" /> This lead has an active enrollment
+                <AlertTriangle className="h-4 w-4 shrink-0" /> This patient has an active enrollment or future enrollment
               </div>
             )}
             <div>
@@ -152,7 +172,9 @@ export default function CreateRejoin() {
             </Card>
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1 rounded-full h-11" onClick={() => setStep(2)}>Back</Button>
-              <Button className="flex-1 rounded-full h-11" onClick={handleConfirm}>Confirm Rejoin</Button>
+              <Button className="flex-1 rounded-full h-11" disabled={createRejoin.isPending} onClick={handleConfirm}>
+                {createRejoin.isPending ? 'Confirming...' : 'Confirm Rejoin'}
+              </Button>
             </div>
           </div>
         )}
@@ -171,3 +193,4 @@ export default function CreateRejoin() {
     </div>
   );
 }
+

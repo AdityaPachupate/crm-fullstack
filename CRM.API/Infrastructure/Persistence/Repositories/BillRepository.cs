@@ -62,7 +62,6 @@ namespace CRM.API.Infrastructure.Persistence.Repositories
         {
             return await db.Bills
                 .AsNoTracking()
-                .IgnoreQueryFilters()
                 .Include(b => b.Enrollment)
                     .ThenInclude(e => e!.Package)
                 .Include(b => b.RejoinRecord)
@@ -70,7 +69,7 @@ namespace CRM.API.Infrastructure.Persistence.Repositories
                 .Include(b => b.Items)
                     .ThenInclude(i => i.Medicine)
                 .Include(b => b.Payments)
-                .Where(b => b.LeadId == leadId)
+                .Where(b => b.LeadId == leadId && !b.IsDeleted)
                 .OrderByDescending(b => b.CreatedAt)
                 .ToListAsync(ct);
         }
@@ -153,6 +152,27 @@ namespace CRM.API.Infrastructure.Persistence.Repositories
                 bill.EnrollmentId = null; // Unlink but keep the record
                 await db.SaveChangesAsync(ct);
             }
+        }
+
+        public async Task DeleteBillByEnrollmentAsync(Guid enrollmentId, bool isPermanent, CancellationToken ct)
+        {
+            var bill = await db.Bills
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(b => b.EnrollmentId == enrollmentId, ct);
+
+            if (bill == null) return;
+
+            if (isPermanent)
+            {
+                db.Bills.Remove(bill);
+            }
+            else
+            {
+                bill.IsDeleted = true;
+                bill.DeletedAt = DateTime.UtcNow;
+            }
+
+            await db.SaveChangesAsync(ct);
         }
 
         public async Task ReattachBillToEnrollmentAsync(Guid enrollmentId, CancellationToken ct)
