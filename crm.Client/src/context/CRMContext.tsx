@@ -11,7 +11,6 @@ interface CRMState {
   medicines: Medicine[];
   enrollments: Enrollment[];
   bills: Bill[];
-  bills: Bill[];
   lookups: LookupValue[];
   loading: boolean;
   error: string | null;
@@ -51,7 +50,6 @@ interface CRMContextType extends CRMState {
   softDeleteBill: (id: string) => void;
   restoreBill: (id: string) => void;
   hardDeleteBill: (id: string) => void;
-  hardDeleteBill: (id: string) => void;
   // Lookups
   addLookup: (l: Omit<LookupValue, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>) => LookupValue;
   updateLookup: (id: string, l: Partial<LookupValue>) => void;
@@ -87,7 +85,6 @@ function loadState(): CRMState {
     medicines: [],
     enrollments: [],
     bills: [],
-    bills: [],
     lookups: defaultLookups.map(l => ({ ...l, id: generateId(), createdAt: ts, updatedAt: ts, deletedAt: null })),
     loading: false,
     error: null,
@@ -111,7 +108,11 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Sync Leads
     fetch(LEADS_API_URL)
-      .then(res => res.json())
+      .then(async res => {
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        const text = await res.text();
+        return text ? JSON.parse(text) : null;
+      })
       .then(data => {
         if (data && data.items) {
           const apiLeads: Lead[] = data.items.map((item: any) => ({
@@ -132,7 +133,11 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
 
     // Sync Lookups
     fetch(`${LOOKUPS_API_URL}?pageSize=200`)
-      .then(res => res.json())
+      .then(async res => {
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        const text = await res.text();
+        return text ? JSON.parse(text) : null;
+      })
       .then(data => {
         if (data && data.items) {
           const apiLookups: LookupValue[] = data.items.map((item: any) => ({
@@ -327,8 +332,6 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     softDeleteBill: (id) => softDelete('bills', id),
     restoreBill: (id) => restore('bills', id),
     hardDeleteBill: (id) => hardDelete('bills', id),
-
-    hardDeleteBill: (id: string) => hardDelete('bills', id),
 
     addLookup: (l) => {
       const lookup: LookupValue = { ...l, id: generateId(), createdAt: now(), updatedAt: now(), deletedAt: null };

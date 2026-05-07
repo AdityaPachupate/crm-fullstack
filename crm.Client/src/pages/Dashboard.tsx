@@ -16,7 +16,7 @@ export default function Dashboard() {
   const { data: enrollmentsData, isLoading: enrollmentsLoading } = useAllEnrollments();
 
   const leads = leadsData?.items || [];
-  const bills = billsData || [];
+  const bills = billsData?.items || [];
   const followUps = followUpsData || [];
   const enrollments = enrollmentsData?.items || [];
 

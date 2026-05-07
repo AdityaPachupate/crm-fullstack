@@ -213,3 +213,10 @@ export interface EnrollmentsResponse {
   pageSize: number;
   totalPages: number;
 }
+
+export interface BillsResponse {
+  items: BillDto[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
+}

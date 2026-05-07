@@ -11,7 +11,15 @@ export async function apiClient<T>(endpoint: string, options: RequestInit = {}):
   const response = await fetch(url, { ...options, headers });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
+    let errorData: any = {};
+    const text = await response.text().catch(() => '');
+    try {
+      if (text) errorData = JSON.parse(text);
+    } catch {
+      // Not a JSON response, maybe an HTML error page
+      errorData = { message: text || `API error: ${response.status}` };
+    }
+    
     const error = new Error(errorData.message || `API error: ${response.status}`);
     (error as any).status = response.status;
     (error as any).data = errorData;
@@ -20,5 +28,11 @@ export async function apiClient<T>(endpoint: string, options: RequestInit = {}):
 
   if (response.status === 204) return {} as T;
   
-  return response.json();
+  const text = await response.text();
+  try {
+    return text ? JSON.parse(text) : ({} as T);
+  } catch (err) {
+    console.error('Failed to parse JSON response:', text);
+    throw new Error('Invalid JSON response from server');
+  }
 }

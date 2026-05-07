@@ -1,4 +1,4 @@
-import { BillDto } from '@/types';
+import { BillDto, BillsResponse } from '@/types';
 import { apiClient } from '@/lib/api-client';
 
 export interface BillDetailDto extends BillDto {
@@ -22,8 +22,8 @@ export const billsApi = {
     return apiClient<BillDetailDto[]>(`/api/leads/${leadId}/bills`);
   },
 
-  getAllBills: async (): Promise<BillDetailDto[]> => {
-    return apiClient<BillDetailDto[]>('/api/bills');
+  getAllBills: async (): Promise<BillsResponse> => {
+    return apiClient<BillsResponse>('/api/bills');
   },
 
   addPayment: async (billId: string, amount: number): Promise<{ success: boolean; message: string }> => {

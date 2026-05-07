@@ -2,8 +2,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { billsApi } from '@/api/bills.api';
 import { toast } from 'sonner';
 
+import { BillDetailDto } from '@/api/bills.api';
+import { BillsResponse } from '@/types';
+
 export const BILLS_QUERY_KEY = ['bills'];
 
+export function useBills(): import('@tanstack/react-query').UseQueryResult<BillsResponse, Error>;
+export function useBills(leadId: string): import('@tanstack/react-query').UseQueryResult<BillDetailDto[], Error>;
 export function useBills(leadId?: string) {
   return useQuery({
     queryKey: leadId ? [...BILLS_QUERY_KEY, leadId] : BILLS_QUERY_KEY,
