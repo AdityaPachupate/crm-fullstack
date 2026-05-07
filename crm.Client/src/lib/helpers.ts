@@ -82,3 +82,12 @@ export function daysBetween(start: string, end: string): number {
 export function todayStr(): string {
   return new Date().toISOString().split('T')[0];
 }
+
+export function formatDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return 'N/A';
+  return new Date(dateStr).toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric'
+  });
+}
