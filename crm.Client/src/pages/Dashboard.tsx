@@ -5,8 +5,8 @@ import { Users, CalendarCheck, PhoneCall, DollarSign, ChevronRight, Loader2 } fr
 import { formatCurrency, isToday, isPast, todayStr } from '@/lib/helpers';
 import { useLeads } from '@/hooks/useLeads';
 import { useBills } from '@/hooks/useBills';
-import { useFollowUps } from '@/hooks/useFollowUps';
-import { useEnrollments } from '@/hooks/useEnrollments';
+import { useFollowUpsToday } from '@/hooks/useFollowUps';
+import { useAllEnrollments } from '@/hooks/useEnrollments';
 import { getStaticLookup } from '@/lib/lookup-registry';
 
 export default function Dashboard() {
