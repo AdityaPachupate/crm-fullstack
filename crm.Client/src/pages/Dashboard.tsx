@@ -25,7 +25,7 @@ export default function Dashboard() {
 
   const todayFollowUps = useMemo(() => {
     return followUps
-      .filter(f => !f.deletedAt && !f.completedAt && (isToday(f.followUpDate) || isPast(f.followUpDate)))
+      .filter(f => !f.completedAt && (isToday(f.followUpDate) || isPast(f.followUpDate)))
       .sort((a, b) => {
         const aOverdue = isPast(a.followUpDate) && !isToday(a.followUpDate) ? 1 : 0;
         const bOverdue = isPast(b.followUpDate) && !isToday(b.followUpDate) ? 1 : 0;
@@ -38,7 +38,7 @@ export default function Dashboard() {
   const overdueCount = todayFollowUps.filter(f => isPast(f.followUpDate) && !isToday(f.followUpDate)).length;
 
   const pendingBilling = useMemo(() => {
-    return bills.filter(b => !b.deletedAt).reduce((sum, b) => sum + b.pendingAmount, 0);
+    return bills.reduce((sum, b) => sum + b.pendingAmount, 0);
   }, [bills]);
 
   const isLoading = leadsLoading || billsLoading || followUpsLoading || enrollmentsLoading;

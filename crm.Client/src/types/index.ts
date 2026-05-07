@@ -106,6 +106,7 @@ export interface LookupValue extends SoftDeletable {
 
 export interface FollowUpDto {
   id: string;
+  leadId: string;
   followUpDate: string;
   notes: string;
   source: string;
