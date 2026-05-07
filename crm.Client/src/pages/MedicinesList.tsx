@@ -84,14 +84,46 @@ export default function MedicinesList() {
       )}
 
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle>{editId ? 'Edit Medicine' : 'Add Medicine'}</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div><Label className="text-xs font-medium text-muted-foreground">Name</Label><Input value={name} onChange={e => setName(e.target.value)} className="mt-1.5 h-10 rounded-lg" /></div>
-            <div><Label className="text-xs font-medium text-muted-foreground">Price</Label><Input type="number" value={price} onChange={e => setPrice(e.target.value)} className="mt-1.5 h-10 rounded-lg" min={0} /></div>
-            <div className="flex items-center justify-between"><Label className="text-xs font-medium text-muted-foreground">Active</Label><Switch checked={active} onCheckedChange={setActive} /></div>
+        <DialogContent className="w-[calc(100%-32px)] max-w-md rounded-2xl p-6">
+          <DialogHeader className="text-left">
+            <DialogTitle className="text-xl font-bold tracking-tight">
+              {editId ? 'Edit Medicine' : 'Add Medicine'}
+            </DialogTitle>
+            <p className="text-xs text-muted-foreground mt-1">Configure medicine details and pricing</p>
+          </DialogHeader>
+          <div className="space-y-5 py-4">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Medicine Name</Label>
+              <Input 
+                value={name} 
+                onChange={e => setName(e.target.value)} 
+                placeholder="e.g. Paracetamol"
+                className="h-11 bg-muted/30 border-none rounded-xl text-sm" 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Price</Label>
+              <Input 
+                type="number" 
+                value={price} 
+                onChange={e => setPrice(e.target.value)} 
+                placeholder="0.00"
+                className="h-11 bg-muted/30 border-none rounded-xl text-sm" 
+                min={0} 
+              />
+            </div>
+            <div className="flex items-center justify-between p-3 rounded-xl bg-muted/30 border border-transparent">
+              <Label className="text-sm font-semibold flex items-center gap-2">
+                Active Status
+              </Label>
+              <Switch checked={active} onCheckedChange={setActive} />
+            </div>
           </div>
-          <DialogFooter><Button className="w-full rounded-full h-11" onClick={handleSave}>Save</Button></DialogFooter>
+          <DialogFooter className="mt-2">
+            <Button className="w-full rounded-xl h-11 text-xs font-bold shadow-lg" onClick={handleSave}>
+              {editId ? 'Update Medicine' : 'Add Medicine'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

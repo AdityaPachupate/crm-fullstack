@@ -107,26 +107,27 @@ export function AddEnrollmentDialog({ isOpen, onClose, leadId, enrollment }: Add
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[450px] max-h-[90vh] overflow-y-auto p-0 gap-0">
-        <DialogHeader className="p-6 pb-2">
-          <DialogTitle className="text-xl font-bold text-slate-900">
+      <DialogContent className="w-[calc(100%-32px)] max-w-md rounded-2xl max-h-[90vh] overflow-y-auto scrollbar-hide p-0 gap-0">
+        <DialogHeader className="p-6 pb-2 text-left">
+          <DialogTitle className="text-xl font-bold text-slate-900 tracking-tight">
             {enrollment ? 'Edit Enrollment' : 'New Enrollment'}
           </DialogTitle>
+          <p className="text-xs text-muted-foreground mt-1">Assign treatment package and medicines</p>
         </DialogHeader>
 
         <div className="px-6 py-4 space-y-5">
           {/* Package Selection */}
           <div className="space-y-2">
-            <Label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Select Package</Label>
+            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Select Package</Label>
             <Select value={packageId} onValueChange={setPackageId} disabled={enrollment !== undefined}>
-              <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-200">
+              <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-200 text-sm">
                 <SelectValue placeholder="Choose a package" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="rounded-xl">
                 {packages?.map(p => (
-                  <SelectItem key={p.id} value={p.id}>
+                  <SelectItem key={p.id} value={p.id} className="rounded-lg">
                     <div className="flex flex-col">
-                      <span className="font-semibold">{p.name}</span>
+                      <span className="font-semibold text-sm">{p.name}</span>
                       <span className="text-[10px] text-muted-foreground">{p.durationDays} days · {formatCurrency(p.cost)}</span>
                     </div>
                   </SelectItem>
@@ -137,13 +138,13 @@ export function AddEnrollmentDialog({ isOpen, onClose, leadId, enrollment }: Add
 
           {/* Start Date */}
           <div className="space-y-2">
-            <Label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Start Date</Label>
+            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Start Date</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button 
                   variant="outline" 
                   className={cn(
-                    "w-full h-11 justify-start text-left font-normal rounded-xl bg-slate-50 border-slate-200",
+                    "w-full h-11 justify-start text-left font-normal rounded-xl bg-slate-50 border-slate-200 text-sm",
                     !startDate && "text-muted-foreground"
                   )}
                 >
@@ -151,7 +152,7 @@ export function AddEnrollmentDialog({ isOpen, onClose, leadId, enrollment }: Add
                   {startDate ? format(startDate, 'PPP') : <span>Pick a date</span>}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent className="w-auto p-0 rounded-2xl" align="start">
                 <Calendar
                   mode="single"
                   selected={startDate}
@@ -168,64 +169,64 @@ export function AddEnrollmentDialog({ isOpen, onClose, leadId, enrollment }: Add
               {/* Medicines Section */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <Label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Medicines (Optional)</Label>
+                  <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Medicines (Optional)</Label>
                   <Button 
                     type="button" 
                     variant="ghost" 
                     size="sm" 
-                    className="h-7 text-xs text-indigo-600 font-bold hover:bg-indigo-50"
+                    className="h-7 text-xs text-indigo-600 font-bold hover:bg-indigo-50 px-2 rounded-lg"
                     onClick={addMedRow}
                   >
-                    <Plus className="mr-1 h-3.5 w-3.5" /> Add Item
+                    <Plus className="mr-1 h-3.5 w-3.5" /> Add
                   </Button>
                 </div>
                 
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {medItems.map((item, i) => (
-                    <div key={i} className="flex items-center gap-2 group animate-in flex-col sm:flex-row">
+                    <div key={i} className="flex items-start gap-2 group animate-in flex-col p-3 rounded-xl bg-slate-50 border border-slate-100 relative">
                       <Select 
                         value={item.medicineId} 
                         onValueChange={v => updateMedRow(i, 'medicineId', v)}
                       >
-                        <SelectTrigger className="flex-1 h-10 rounded-xl bg-slate-50 border-slate-200 text-xs">
+                        <SelectTrigger className="w-full h-10 rounded-lg bg-white border-slate-200 text-xs">
                           <SelectValue placeholder="Select medicine" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="rounded-xl">
                           {medicines?.filter(m => m.active).map(m => (
-                            <SelectItem key={m.id} value={m.id}>
+                            <SelectItem key={m.id} value={m.id} className="rounded-lg">
                               {m.name} ({formatCurrency(m.price)})
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                       
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center h-10 px-1 bg-slate-100 rounded-xl border border-slate-200">
+                      <div className="flex items-center justify-between w-full mt-1">
+                        <div className="flex items-center h-9 px-1 bg-white rounded-lg border border-slate-200">
                           <Button 
                             type="button" 
                             variant="ghost" 
                             size="icon" 
-                            className="h-8 w-8 rounded-lg hover:bg-white"
+                            className="h-7 w-7 rounded-md hover:bg-slate-50"
                             onClick={() => updateMedRow(i, 'quantity', Math.max(1, item.quantity - 1))}
                           >
-                            <Minus size={14} />
+                            <Minus size={12} />
                           </Button>
-                          <span className="w-8 text-center text-xs font-bold">{item.quantity}</span>
+                          <span className="w-7 text-center text-xs font-bold">{item.quantity}</span>
                           <Button 
                             type="button" 
                             variant="ghost" 
                             size="icon" 
-                            className="h-8 w-8 rounded-lg hover:bg-white"
+                            className="h-7 w-7 rounded-md hover:bg-slate-50"
                             onClick={() => updateMedRow(i, 'quantity', item.quantity + 1)}
                           >
-                            <Plus size={14} />
+                            <Plus size={12} />
                           </Button>
                         </div>
                         <Button 
                           type="button" 
                           variant="ghost" 
                           size="icon" 
-                          className="h-10 w-10 text-destructive hover:bg-destructive/5 rounded-xl"
+                          className="h-9 w-9 text-destructive hover:bg-destructive/5 rounded-lg"
                           onClick={() => removeMedRow(i)}
                         >
                           <Trash2 size={16} />
@@ -238,7 +239,7 @@ export function AddEnrollmentDialog({ isOpen, onClose, leadId, enrollment }: Add
 
               {/* Amount Paid */}
               <div className="space-y-2">
-                <Label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Amount Paid (Initial)</Label>
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Initial Payment</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">₹</span>
                   <Input 
@@ -252,13 +253,13 @@ export function AddEnrollmentDialog({ isOpen, onClose, leadId, enrollment }: Add
 
               {/* Minimal Bill Preview */}
               {selectedPkg && (
-                <div className="rounded-2xl bg-indigo-50/50 border border-indigo-100 p-4 space-y-2">
-                  <div className="flex justify-between text-[11px] font-medium text-slate-500">
-                    <span>Package ({selectedPkg.name})</span>
+                <div className="rounded-xl bg-indigo-50/50 border border-indigo-100 p-4 space-y-2">
+                  <div className="flex justify-between text-[10px] font-medium text-slate-500">
+                    <span>Package Fee</span>
                     <span>{formatCurrency(selectedPkg.cost)}</span>
                   </div>
                   {medTotal > 0 && (
-                    <div className="flex justify-between text-[11px] font-medium text-slate-500">
+                    <div className="flex justify-between text-[10px] font-medium text-slate-500">
                       <span>Medicines Total</span>
                       <span>{formatCurrency(medTotal)}</span>
                     </div>
@@ -267,7 +268,7 @@ export function AddEnrollmentDialog({ isOpen, onClose, leadId, enrollment }: Add
                     <span>Grand Total</span>
                     <span>{formatCurrency(grandTotal)}</span>
                   </div>
-                  <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest mt-1">
+                  <div className="flex justify-between items-center text-[9px] font-bold uppercase tracking-widest mt-1">
                     <span className="text-slate-400">Balance Due</span>
                     <span className={pending > 0 ? "text-rose-600" : "text-emerald-600"}>
                       {pending > 0 ? formatCurrency(pending) : 'Settled'}
@@ -279,20 +280,20 @@ export function AddEnrollmentDialog({ isOpen, onClose, leadId, enrollment }: Add
           )}
         </div>
 
-        <DialogFooter className="p-6 bg-slate-50/50 border-t border-slate-100 mt-2">
+        <DialogFooter className="p-6 bg-slate-50/50 border-t border-slate-100 flex-row gap-3">
           <Button 
             variant="ghost" 
             onClick={onClose}
-            className="rounded-xl h-11 font-bold text-slate-500"
+            className="flex-1 rounded-xl h-11 font-bold text-slate-500 m-0"
           >
             Cancel
           </Button>
           <Button 
             onClick={handleConfirm}
             disabled={!packageId || isSubmitting}
-            className="flex-1 rounded-xl h-11 font-bold bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-200"
+            className="flex-[2] rounded-xl h-11 font-bold bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-200 m-0"
           >
-            {isSubmitting ? 'Processing...' : (enrollment ? 'Update Enrollment' : 'Enrol Patient')}
+            {isSubmitting ? '...' : (enrollment ? 'Update' : 'Enrol')}
           </Button>
         </DialogFooter>
       </DialogContent>

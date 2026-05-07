@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { usePackages } from '@/hooks/usePackages';
 import { packagesApi } from '@/api/packages.api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,6 +14,16 @@ import {
   DialogFooter,
   DialogDescription
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   Search, 
   Plus, 
@@ -30,7 +40,6 @@ import {
 import { formatCurrency } from '@/lib/helpers';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { Badge } from '@/components/ui/badge';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -50,6 +59,8 @@ export default function PackagesCatalog() {
   const [duration, setDuration] = useState('');
   const [cost, setCost] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const [packageToDelete, setPackageToDelete] = useState<string | null>(null);
 
   const filteredPackages = useMemo(() => {
     return packages.filter(p => 
@@ -82,6 +93,7 @@ export default function PackagesCatalog() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['packages'] });
       toast.success('Package moved to trash');
+      setPackageToDelete(null);
     },
     onError: () => toast.error('Failed to delete package')
   });
@@ -128,15 +140,8 @@ export default function PackagesCatalog() {
     }
   };
 
-  const handleDelete = (id: string) => {
-    if (window.confirm('Move this package to trash?')) {
-      deleteMutation.mutate(id);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-background pb-20 relative">
-      {/* Background Texture Overlay */}
       <div className="absolute inset-0 z-[-1] opacity-[0.4] pointer-events-none" 
            style={{ 
              backgroundImage: `radial-gradient(circle at 2px 2px, hsl(var(--muted-foreground) / 0.15) 1px, transparent 0)`,
@@ -213,9 +218,9 @@ export default function PackagesCatalog() {
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full opacity-40 group-hover:opacity-100">
                           <MoreVertical className="h-4 w-4" />
                         </Button>
@@ -224,7 +229,10 @@ export default function PackagesCatalog() {
                         <DropdownMenuItem onClick={() => openEdit(pkg)} className="gap-2">
                           <Edit2 className="h-4 w-4" /> Edit Details
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleDelete(pkg.id)} className="gap-2 text-destructive focus:text-destructive">
+                        <DropdownMenuItem 
+                          onClick={() => setPackageToDelete(pkg.id)} 
+                          className="gap-2 text-destructive focus:text-destructive"
+                        >
                           <Trash2 className="h-4 w-4" /> Move to Trash
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -239,31 +247,31 @@ export default function PackagesCatalog() {
       </div>
 
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="sm:max-w-[425px] rounded-3xl">
-          <DialogHeader>
+        <DialogContent className="w-[calc(100%-32px)] max-w-md rounded-2xl max-h-[90vh] overflow-y-auto scrollbar-hide p-6">
+          <DialogHeader className="text-left">
             <DialogTitle className="text-xl font-bold tracking-tight">
               {editId ? 'Edit Package' : 'New Package'}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-xs">
               Configure treatment duration and pricing
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-6 py-4">
+          <div className="space-y-5 py-4">
             <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Package Name</Label>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Package Name</Label>
               <Input 
                 value={name} 
                 onChange={e => setName(e.target.value)} 
                 placeholder="e.g. Chronic Management" 
-                className="h-12 bg-muted/30 border-none rounded-xl"
+                className="h-11 bg-muted/30 border-none rounded-xl text-sm"
               />
               {errors.name && <p className="text-[10px] text-destructive font-bold ml-1">{errors.name}</p>}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Duration (Days)</Label>
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Duration (Days)</Label>
                 <div className="relative">
                   <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input 
@@ -271,13 +279,13 @@ export default function PackagesCatalog() {
                     value={duration} 
                     onChange={e => setDuration(e.target.value)} 
                     placeholder="30" 
-                    className="h-12 pl-10 bg-muted/30 border-none rounded-xl"
+                    className="h-11 pl-10 bg-muted/30 border-none rounded-xl text-sm"
                   />
                 </div>
                 {errors.duration && <p className="text-[10px] text-destructive font-bold ml-1">{errors.duration}</p>}
               </div>
               <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Cost</Label>
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Cost</Label>
                 <div className="relative">
                   <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input 
@@ -285,7 +293,7 @@ export default function PackagesCatalog() {
                     value={cost} 
                     onChange={e => setCost(e.target.value)} 
                     placeholder="5000" 
-                    className="h-12 pl-10 bg-muted/30 border-none rounded-xl"
+                    className="h-11 pl-10 bg-muted/30 border-none rounded-xl text-sm"
                   />
                 </div>
                 {errors.cost && <p className="text-[10px] text-destructive font-bold ml-1">{errors.cost}</p>}
@@ -293,24 +301,24 @@ export default function PackagesCatalog() {
             </div>
 
             {name && duration && cost && (
-              <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                    <Package className="h-5 w-5" />
+              <div className="p-3 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-between">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-9 w-9 shrink-0 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                    <Package className="h-4 w-4" />
                   </div>
-                  <div>
-                    <p className="text-sm font-bold truncate max-w-[150px]">{name}</p>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold truncate">{name}</p>
                     <p className="text-[10px] text-muted-foreground font-medium">{duration} Days</p>
                   </div>
                 </div>
-                <p className="text-lg font-bold text-primary">{formatCurrency(parseFloat(cost) || 0)}</p>
+                <p className="text-base font-bold text-primary shrink-0 ml-2">{formatCurrency(parseFloat(cost) || 0)}</p>
               </div>
             )}
           </div>
 
-          <DialogFooter className="sm:justify-start">
+          <DialogFooter className="mt-2">
             <Button 
-              className="w-full rounded-full h-12 text-sm font-bold shadow-lg shadow-primary/20" 
+              className="w-full rounded-xl h-11 text-xs font-bold shadow-lg shadow-primary/20" 
               onClick={handleSave}
               disabled={createMutation.isPending || updateMutation.isPending}
             >
@@ -323,6 +331,26 @@ export default function PackagesCatalog() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!packageToDelete} onOpenChange={(open) => !open && setPackageToDelete(null)}>
+        <AlertDialogContent className="w-[calc(100%-32px)] max-w-md rounded-2xl p-6">
+          <AlertDialogHeader className="text-left">
+            <AlertDialogTitle className="text-lg font-bold tracking-tight">Move to Trash?</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs leading-relaxed">
+              This will hide the package from the active catalog. You can restore it later from the trash settings.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-3 mt-4">
+            <AlertDialogCancel className="flex-1 rounded-xl h-11 text-xs font-semibold m-0">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => packageToDelete && deleteMutation.mutate(packageToDelete)}
+              className="flex-1 rounded-xl h-11 text-xs font-semibold m-0 bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Move to Trash
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

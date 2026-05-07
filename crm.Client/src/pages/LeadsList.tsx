@@ -292,17 +292,17 @@ export default function LeadsList() {
       </Link>
 
       <AlertDialog open={!!leadToDelete} onOpenChange={(open) => !open && setLeadToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Move to Trash?</AlertDialogTitle>
-            <AlertDialogDescription>
+        <AlertDialogContent className="w-[calc(100%-32px)] max-w-md rounded-2xl p-6">
+          <AlertDialogHeader className="text-left">
+            <AlertDialogTitle className="text-lg font-bold tracking-tight">Move to Trash?</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs leading-relaxed">
               This will move <strong>{leadToDelete?.name}</strong> and all their related data (bills, enrollments, follow-ups) to the trash. You can restore them later.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="flex-row gap-3 mt-4">
+            <AlertDialogCancel className="flex-1 rounded-xl h-11 text-xs font-semibold m-0">Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="flex-1 rounded-xl h-11 text-xs font-semibold m-0 bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={async () => {
                 if (leadToDelete) {
                   await deleteMutation.mutateAsync(leadToDelete.id);

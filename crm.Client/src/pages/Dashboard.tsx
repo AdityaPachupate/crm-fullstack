@@ -291,22 +291,26 @@ export default function Dashboard() {
                 <Settings2 className="h-3 w-3" /> Manage
               </button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Customize Dashboard Widgets</DialogTitle>
+            <DialogContent className="w-[calc(100%-32px)] max-w-md rounded-2xl p-6">
+              <DialogHeader className="text-left">
+                <DialogTitle className="text-xl font-bold tracking-tight">Customize Dashboard</DialogTitle>
+                <p className="text-xs text-muted-foreground">Select widgets to show on your home screen</p>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
+              <div className="grid gap-3 py-4">
                 {ALL_WIDGETS.map(w => (
-                  <div key={w.id} className="flex items-center space-x-3">
+                  <div key={w.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30 border border-transparent hover:border-primary/20 transition-colors">
+                    <label htmlFor={w.id} className="text-sm font-semibold flex items-center gap-3 cursor-pointer flex-1">
+                      <div className="h-8 w-8 rounded-lg bg-background flex items-center justify-center">
+                        <w.icon className={`h-4 w-4 ${w.color}`} />
+                      </div>
+                      {w.label}
+                    </label>
                     <Checkbox 
                       id={w.id} 
                       checked={enabledWidgets.includes(w.id)} 
                       onCheckedChange={() => toggleWidget(w.id)}
+                      className="rounded-md"
                     />
-                    <label htmlFor={w.id} className="text-sm font-medium leading-none flex items-center gap-2">
-                      <w.icon className={`h-4 w-4 ${w.color}`} />
-                      {w.label}
-                    </label>
                   </div>
                 ))}
               </div>
