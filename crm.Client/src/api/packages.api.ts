@@ -19,13 +19,21 @@ export const packagesApi = {
   create: async (pkg: Omit<TreatmentPackage, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>): Promise<TreatmentPackage> => {
     return await apiClient<TreatmentPackage>('/api/packages', {
       method: 'POST',
-      body: JSON.stringify(pkg),
+      body: JSON.stringify({
+        name: pkg.name,
+        durationInDays: pkg.durationDays,
+        cost: pkg.cost
+      }),
     });
   },
   update: async (id: string, pkg: Partial<TreatmentPackage>): Promise<TreatmentPackage> => {
     return await apiClient<TreatmentPackage>(`/api/packages/${id}`, {
       method: 'PUT',
-      body: JSON.stringify({ id, ...pkg }),
+      body: JSON.stringify({
+        name: pkg.name,
+        durationInDays: pkg.durationDays,
+        cost: pkg.cost
+      }),
     });
   },
   delete: async (id: string): Promise<void> => {
