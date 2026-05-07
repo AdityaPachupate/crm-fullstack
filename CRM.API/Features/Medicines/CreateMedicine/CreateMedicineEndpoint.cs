@@ -10,11 +10,11 @@ namespace CRM.API.Features.Medicines.CreateMedicine
     {
         public void MapEndpoint(IEndpointRouteBuilder app)
         {
-            app.MapPost("/api/medicines", async (CreateMedicineRequest request, ISender sender) =>
+            app.MapPost("/medicines", async (CreateMedicineRequest request, ISender sender) =>
             {
                 var command = new CreateMedicineCommand(request);
                 var result = await sender.Send(command);
-                return Results.Created($"/api/medicines/{result.Id}", result);
+                return Results.Created($"/medicines/{result.Id}", result);
             })
             .WithName("CreateMedicine")
             .WithTags("Medicines")

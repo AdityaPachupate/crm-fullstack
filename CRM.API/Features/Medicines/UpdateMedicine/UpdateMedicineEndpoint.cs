@@ -7,9 +7,9 @@ namespace CRM.API.Features.Medicines.UpdateMedicine
     {
         public void MapEndpoint(IEndpointRouteBuilder app)
         {
-            app.MapPut("/api/medicines", async (UpdateMedicineRequest request, IMediator mediator, CancellationToken ct) =>
+            app.MapPut("/medicines/{id:guid}", async (Guid id, [Microsoft.AspNetCore.Mvc.FromBody] UpdateMedicineRequest request, IMediator mediator, CancellationToken ct) =>
             {
-                var result = await mediator.Send(new UpdateMedicineCommand(request), ct);
+                var result = await mediator.Send(new UpdateMedicineCommand(id, request), ct);
                 return Results.Ok(result);
             })
             .WithName("UpdateMedicine")

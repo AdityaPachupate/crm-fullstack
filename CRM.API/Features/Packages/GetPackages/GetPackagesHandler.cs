@@ -11,6 +11,7 @@ namespace CRM.API.Features.Packages.GetPackages
         {
             return await db.Packages
                 .AsNoTracking()
+                .IgnoreQueryFilters()
                 .Where(p => p.IsDeleted == query.IsTrash)
                 .OrderBy(p => p.Name)
                 .Select(p => new GetPackagesResponse(

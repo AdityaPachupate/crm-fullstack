@@ -192,7 +192,7 @@ export function AddEnrollmentDialog({ isOpen, onClose, leadId, enrollment }: Add
                           <SelectValue placeholder="Select medicine" />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl">
-                          {medicines?.filter(m => m.active).map(m => (
+                          {medicines?.filter(m => m.isActive).map(m => (
                             <SelectItem key={m.id} value={m.id} className="rounded-lg">
                               {m.name} ({formatCurrency(m.price)})
                             </SelectItem>

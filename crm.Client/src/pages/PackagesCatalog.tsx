@@ -80,12 +80,31 @@ export default function PackagesCatalog() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, pkg }: { id: string, pkg: any }) => packagesApi.update(id, pkg),
-    onSuccess: () => {
+    onMutate: async ({ id, pkg }) => {
+      await queryClient.cancelQueries({ queryKey: ['packages'] });
+      const previousPackages = queryClient.getQueryData(['packages']);
+      
+      queryClient.setQueriesData({ queryKey: ['packages'] }, (old: any) => {
+        if (!old) return old;
+        if (Array.isArray(old)) {
+          return old.map((p: any) => p.id === id ? { ...p, ...pkg } : p);
+        }
+        return old;
+      });
+
+      return { previousPackages };
+    },
+    onError: (err, variables, context) => {
+      queryClient.setQueriesData({ queryKey: ['packages'] }, context?.previousPackages);
+      toast.error('Failed to update package');
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['packages'] });
+    },
+    onSuccess: () => {
       toast.success('Package updated successfully');
       setShowForm(false);
     },
-    onError: () => toast.error('Failed to update package')
   });
 
   const deleteMutation = useMutation({

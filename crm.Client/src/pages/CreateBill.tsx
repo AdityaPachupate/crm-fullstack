@@ -17,7 +17,7 @@ export default function CreateBill() {
   const navigate = useNavigate();
 
   const activeLeads = leads.filter(l => !l.deletedAt);
-  const activeMedicines = medicines.filter(m => !m.deletedAt && m.active);
+  const activeMedicines = medicines.filter(m => !m.deletedAt && m.isActive);
 
   const [leadId, setLeadId] = useState('');
   const [packageAmount, setPackageAmount] = useState('');

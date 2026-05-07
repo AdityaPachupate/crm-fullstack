@@ -4,7 +4,7 @@ namespace CRM.API.Features.Medicines.GetMedicines
         Guid Id,
         string Name,
         decimal Price,
-        bool Active,
+        bool IsActive,
         DateTime CreatedAt
     );
 }

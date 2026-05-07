@@ -13,7 +13,7 @@ namespace CRM.API.Features.Medicines.GetMedicineById
     {
         public void MapEndpoint(IEndpointRouteBuilder app)
         {
-            app.MapGet("/api/medicines/{id:guid}", async (
+            app.MapGet("/medicines/{id:guid}", async (
                 Guid id,
                 IMediator mediator,
                 CancellationToken ct) =>

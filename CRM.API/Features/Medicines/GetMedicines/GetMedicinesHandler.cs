@@ -10,6 +10,7 @@ namespace CRM.API.Features.Medicines.GetMedicines
         {
             return await db.Medicines
                 .AsNoTracking()
+                .IgnoreQueryFilters()
                 .Where(m => m.IsDeleted == request.IsTrash)
                 .OrderBy(m => m.Name)
                 .Select(m => new GetMedicinesResponse(

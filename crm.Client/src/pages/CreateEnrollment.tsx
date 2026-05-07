@@ -23,7 +23,7 @@ export default function CreateEnrollment() {
 
   const activeLeads = leads.filter(l => !l.deletedAt);
   const activePackages = packages.filter(p => !p.deletedAt);
-  const activeMedicines = medicines.filter(m => !m.deletedAt && m.active);
+  const activeMedicines = medicines.filter(m => !m.deletedAt && m.isActive);
 
   const [leadId, setLeadId] = useState('');
   const [packageId, setPackageId] = useState('');

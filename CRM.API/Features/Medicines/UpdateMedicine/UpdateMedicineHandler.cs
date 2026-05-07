@@ -15,14 +15,14 @@ namespace CRM.API.Features.Medicines.UpdateMedicine
         {
             var medicine = await db.Medicines
                 .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(m => m.Id == command.Request.Id, ct);
+                .FirstOrDefaultAsync(m => m.Id == command.Id, ct);
 
             if (medicine == null)
             {
-                logger.LogWarning("{Message}: Updating Medicine with ID {MedicineId} not found", LoggingMessages.NotFound, command.Request.Id);
+                logger.LogWarning("{Message}: Updating Medicine with ID {MedicineId} not found", LoggingMessages.NotFound, command.Id);
                 throw new BusinessException(
                     LoggingMessages.NotFound,
-                    $"Fetching medicine with ID {command.Request.Id}",
+                    $"Fetching medicine with ID {command.Id}",
                     HttpStatusCode.NotFound
                 );
             }

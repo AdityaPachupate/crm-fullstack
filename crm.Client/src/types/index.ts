@@ -49,7 +49,7 @@ export interface TreatmentPackage extends SoftDeletable {
 export interface Medicine extends SoftDeletable {
   name: string;
   price: number;
-  active: boolean;
+  isActive: boolean;
 }
 
 // ─── Enrollment ───

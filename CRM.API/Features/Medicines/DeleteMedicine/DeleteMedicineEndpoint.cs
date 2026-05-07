@@ -13,7 +13,7 @@ namespace CRM.API.Features.Medicines.DeleteMedicine
     {
         public void MapEndpoint(IEndpointRouteBuilder app)
         {
-            app.MapDelete("/api/medicines/{id:guid}", async (
+            app.MapDelete("/medicines/{id:guid}", async (
                 Guid id,
                 [FromQuery] bool? isPermanent,
                 IMediator mediator,
