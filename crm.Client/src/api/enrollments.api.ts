@@ -39,8 +39,27 @@ export const enrollmentsApi = {
   delete: async (id: string): Promise<void> => {
     await apiClient(`/api/enrollments/${id}`, { method: 'DELETE' });
   },
-  getAll: async (): Promise<{ items: any[]; totalCount: number }> => {
-    return await apiClient<{ items: any[]; totalCount: number }>('/api/enrollments');
+  getAll: async (params?: { 
+    pageNumber?: number; 
+    pageSize?: number; 
+    isTrash?: boolean;
+    isActive?: boolean;
+    startDateFrom?: string;
+    startDateTo?: string;
+    search?: string;
+    packageId?: string;
+    isPending?: boolean;
+  }): Promise<{ items: any[]; totalCount: number }> => {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          searchParams.append(key, value.toString());
+        }
+      });
+    }
+    const queryString = searchParams.toString();
+    return await apiClient<{ items: any[]; totalCount: number }>(`/api/enrollments${queryString ? `?${queryString}` : ''}`);
   },
   addPayment: async (billId: string, amount: number): Promise<{ success: boolean; message: string }> => {
     return await apiClient<{ success: boolean; message: string }>(`/api/bills/${billId}/payments`, {

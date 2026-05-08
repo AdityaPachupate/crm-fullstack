@@ -14,10 +14,10 @@ export function useEnrollment(id: string) {
   });
 }
 
-export function useAllEnrollments() {
+export function useAllEnrollments(params?: Parameters<typeof enrollmentsApi.getAll>[0]) {
   return useQuery({
-    queryKey: ENROLLMENTS_QUERY_KEY,
-    queryFn: () => enrollmentsApi.getAll(),
+    queryKey: params ? [...ENROLLMENTS_QUERY_KEY, params] : ENROLLMENTS_QUERY_KEY,
+    queryFn: () => enrollmentsApi.getAll(params),
   });
 }
 
@@ -27,8 +27,10 @@ export function useEnrollments() {
   const createEnrollment = useMutation({
     mutationFn: (request: CreateEnrollmentRequest) => enrollmentsApi.create(request),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ENROLLMENTS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: LEADS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: BILLS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       toast.success('Enrollment created successfully');
     },
     onError: (error: any) => {
@@ -39,12 +41,14 @@ export function useEnrollments() {
   const updateEnrollment = useMutation({
     mutationFn: (request: UpdateEnrollmentRequest) => enrollmentsApi.update(request),
     onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ENROLLMENTS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: LEADS_QUERY_KEY });
       // Also invalidate the specific lead detail if possible
       if (variables.leadId) {
          queryClient.invalidateQueries({ queryKey: [...LEADS_QUERY_KEY, variables.leadId] });
       }
       queryClient.invalidateQueries({ queryKey: BILLS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       toast.success('Enrollment updated successfully');
     },
     onError: (error: any) => {
@@ -55,8 +59,10 @@ export function useEnrollments() {
   const deleteEnrollment = useMutation({
     mutationFn: (id: string) => enrollmentsApi.delete(id),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ENROLLMENTS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: LEADS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: BILLS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       toast.success('Enrollment deleted successfully');
     },
     onError: (error: any) => {
@@ -69,9 +75,12 @@ export function useEnrollments() {
       enrollmentsApi.addPayment(billId, amount),
     onSuccess: (result) => {
       if (result.success) {
+        // Invalidate everything that might be affected by a financial change
         queryClient.invalidateQueries({ queryKey: ENROLLMENTS_QUERY_KEY });
         queryClient.invalidateQueries({ queryKey: LEADS_QUERY_KEY });
         queryClient.invalidateQueries({ queryKey: BILLS_QUERY_KEY });
+        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+        
         toast.success(result.message || 'Payment recorded successfully');
       } else {
         toast.error(result.message || 'Failed to record payment');

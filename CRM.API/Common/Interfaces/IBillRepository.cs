@@ -26,10 +26,8 @@ namespace CRM.API.Common.Interfaces
         /// </summary>
         Task DetachBillFromEnrollmentAsync(Guid enrollmentId, CancellationToken ct);
 
-        /// <summary>
-        /// Soft or hard deletes a bill associated with an enrollment.
-        /// </summary>
         Task DeleteBillByEnrollmentAsync(Guid enrollmentId, bool isPermanent, CancellationToken ct);
+        Task RestoreBillByEnrollmentAsync(Guid enrollmentId, CancellationToken ct);
 
         /// <summary>
         /// Restores a link between an Enrollment and its Bill.

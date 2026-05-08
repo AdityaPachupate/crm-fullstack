@@ -19,7 +19,10 @@ namespace CRM.API.Features.Enrollments.GetEnrollments
                 [FromQuery] DateOnly? startDateTo = null,
                 [FromQuery] DateTime? createdAtFrom = null,
                 [FromQuery] DateTime? createdAtTo = null,
-                [FromQuery] bool? isActive = null
+                [FromQuery] bool? isActive = null,
+                [FromQuery] string? search = null,
+                [FromQuery] Guid? packageId = null,
+                [FromQuery] bool? isPending = null
             ) =>
             {
                 var result = await mediator.Send(new GetEnrollmentsQuery(
@@ -30,7 +33,10 @@ namespace CRM.API.Features.Enrollments.GetEnrollments
                     startDateTo,
                     createdAtFrom,
                     createdAtTo,
-                    isActive
+                    isActive,
+                    search,
+                    packageId,
+                    isPending
                 ), cancellationToken);
                 return Results.Ok(result);
             })

@@ -121,7 +121,7 @@ export function AddEnrollmentDialog({ isOpen, onClose, leadId, enrollment }: Add
             <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Select Package</Label>
             <Select value={packageId} onValueChange={setPackageId} disabled={enrollment !== undefined}>
               <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-200 text-sm">
-                <SelectValue placeholder="Choose a package" />
+                <SelectValue placeholder={loadingPackages ? "Loading packages..." : "Choose a package"} />
               </SelectTrigger>
               <SelectContent className="rounded-xl">
                 {packages?.map(p => (
@@ -189,7 +189,7 @@ export function AddEnrollmentDialog({ isOpen, onClose, leadId, enrollment }: Add
                         onValueChange={v => updateMedRow(i, 'medicineId', v)}
                       >
                         <SelectTrigger className="w-full h-10 rounded-lg bg-white border-slate-200 text-xs">
-                          <SelectValue placeholder="Select medicine" />
+                          <SelectValue placeholder={loadingMedicines ? "Loading..." : "Select medicine"} />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl">
                           {medicines?.filter(m => m.isActive).map(m => (

@@ -6,9 +6,11 @@ namespace CRM.API.Features.Enrollments.GetEnrollments
         string LeadPhone,
         string PackageName,
         decimal PackageCostSnapshot,
+        decimal PendingAmount,
         DateOnly StartDate,
         DateOnly EndDate,
         DateTime CreatedAt,
-        bool IsActive
+        bool IsActive,
+        string Status
     );
 }

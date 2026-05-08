@@ -11,6 +11,9 @@ namespace CRM.API.Features.Enrollments.GetEnrollments
         DateOnly? StartDateTo = null,
         DateTime? CreatedAtFrom = null,
         DateTime? CreatedAtTo = null,
-        bool? IsActive = null
+        bool? IsActive = null,
+        string? Search = null,
+        Guid? PackageId = null,
+        bool? IsPending = null
     ) : IRequest<PagedResult<GetEnrollmentsResponse>>;
 }

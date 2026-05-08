@@ -158,16 +158,21 @@ export interface EnrollmentDetailDto {
 
 export interface EnrollmentDto {
   id: string;
-  packageId: string;
+  leadName: string;
+  leadPhone: string;
+  packageId?: string;
   packageName: string;
   packageCostSnapshot: number;
-  packageDurationSnapshot: number;
+  packageDurationSnapshot?: number;
+  pendingAmount: number;
   startDate: string;
   endDate: string;
   createdAt: string;
-  bill: BillDto | null;
+  isActive: boolean;
+  status: 'Active' | 'Expired' | 'Scheduled';
+  bill?: BillDto | null;
   isDeleted: boolean;
-  deletedAt: string | null;
+  deletedAt?: string | null;
 }
 
 export interface RejoinRecordDto {

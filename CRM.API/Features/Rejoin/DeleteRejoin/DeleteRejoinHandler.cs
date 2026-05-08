@@ -9,7 +9,7 @@ using System.Net;
 
 namespace CRM.API.Features.Rejoin.DeleteRejoin;
 
-public class DeleteRejoinHandler(AppDbContext db, IBillRepository billRepository, ILogger<DeleteRejoinHandler> logger) 
+public class DeleteRejoinHandler(AppDbContext db, ILogger<DeleteRejoinHandler> logger) 
     : IRequestHandler<DeleteRejoinCommand, DeleteRejoinResponse>
 {
     public async Task<DeleteRejoinResponse> Handle(DeleteRejoinCommand command, CancellationToken ct)

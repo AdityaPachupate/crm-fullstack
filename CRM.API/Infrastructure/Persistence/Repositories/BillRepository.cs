@@ -175,6 +175,20 @@ namespace CRM.API.Infrastructure.Persistence.Repositories
             await db.SaveChangesAsync(ct);
         }
 
+        public async Task RestoreBillByEnrollmentAsync(Guid enrollmentId, CancellationToken ct)
+        {
+            var bill = await db.Bills
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(b => b.EnrollmentId == enrollmentId, ct);
+
+            if (bill != null)
+            {
+                bill.IsDeleted = false;
+                bill.DeletedAt = null;
+                await db.SaveChangesAsync(ct);
+            }
+        }
+
         public async Task ReattachBillToEnrollmentAsync(Guid enrollmentId, CancellationToken ct)
         {
             // Implementation for reattaching if needed
