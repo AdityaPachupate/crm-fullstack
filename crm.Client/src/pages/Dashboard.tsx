@@ -21,11 +21,7 @@ import {
   X
 } from 'lucide-react';
 import { formatCurrency, isToday, isPast, todayStr, formatDate } from '@/lib/helpers';
-import { useLeads } from '@/hooks/useLeads';
-import { useBills } from '@/hooks/useBills';
-import { useFollowUpsToday } from '@/hooks/useFollowUps';
-import { useAllEnrollments } from '@/hooks/useEnrollments';
-import { getStaticLookup } from '@/lib/lookup-registry';
+import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { 
   PieChart, 
   Pie, 
@@ -57,10 +53,7 @@ const ALL_WIDGETS = [
 ];
 
 export default function Dashboard() {
-  const { data: leadsData, isLoading: leadsLoading } = useLeads();
-  const { data: billsData, isLoading: billsLoading } = useBills();
-  const { data: followUpsData, isLoading: followUpsLoading } = useFollowUpsToday();
-  const { data: enrollmentsData, isLoading: enrollmentsLoading } = useAllEnrollments();
+  const { data: stats, isLoading: statsLoading } = useDashboardStats();
 
   const [enabledWidgets, setEnabledWidgets] = useState<string[]>(() => {
     const saved = localStorage.getItem('dashboard_widgets');
@@ -71,58 +64,11 @@ export default function Dashboard() {
     localStorage.setItem('dashboard_widgets', JSON.stringify(enabledWidgets));
   }, [enabledWidgets]);
 
-  const leads = leadsData?.items || [];
-  const bills = billsData?.items || [];
-  const followUps = followUpsData || [];
-  const enrollments = enrollmentsData?.items || [];
+  const statusDistribution = stats?.statusDistribution || [];
+  const sourceDistribution = stats?.sourceDistribution || [];
+  const priorityTasks = stats?.priorityTasks || [];
 
-  const activeLeads = leads.filter(l => !l.deletedAt);
-  const activeEnrollments = enrollments.filter(e => !e.deletedAt && e.startDate <= todayStr() && e.endDate >= todayStr());
-
-  const todayFollowUps = useMemo(() => {
-    return followUps
-      .filter(f => !f.completedAt && (isToday(f.followUpDate) || isPast(f.followUpDate)))
-      .sort((a, b) => {
-        const aOverdue = isPast(a.followUpDate) && !isToday(a.followUpDate) ? 1 : 0;
-        const bOverdue = isPast(b.followUpDate) && !isToday(b.followUpDate) ? 1 : 0;
-        if (bOverdue !== aOverdue) return bOverdue - aOverdue;
-        const pMap = { High: 3, Medium: 2, Low: 1 };
-        return pMap[b.priority as keyof typeof pMap] - pMap[a.priority as keyof typeof pMap];
-      });
-  }, [followUps]);
-
-  const recentLeads = useMemo(() => {
-    return [...activeLeads]
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, 5);
-  }, [activeLeads]);
-
-  const statusDistribution = useMemo(() => {
-    const counts: Record<string, number> = {};
-    activeLeads.forEach(l => {
-      counts[l.status] = (counts[l.status] || 0) + 1;
-    });
-    return Object.entries(counts).map(([name, value]) => ({ name, value }));
-  }, [activeLeads]);
-
-  const sourceDistribution = useMemo(() => {
-    const counts: Record<string, number> = {};
-    activeLeads.forEach(l => {
-      counts[l.source || 'Unknown'] = (counts[l.source || 'Unknown'] || 0) + 1;
-    });
-    return Object.entries(counts)
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 5);
-  }, [activeLeads]);
-
-  const overdueCount = todayFollowUps.filter(f => isPast(f.followUpDate) && !isToday(f.followUpDate)).length;
-
-  const pendingBilling = useMemo(() => {
-    return bills.reduce((sum, b) => sum + b.pendingAmount, 0);
-  }, [bills]);
-
-  const isLoading = leadsLoading || billsLoading || followUpsLoading || enrollmentsLoading;
+  const isLoading = statsLoading;
 
   const greeting = new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 17 ? 'Good afternoon' : 'Good evening';
   const currentDate = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date());
@@ -168,10 +114,10 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 auto-rows-min">
         {[
-          { label: 'Total Patients', value: activeLeads.length, color: 'text-blue-600', trend: '+12% month' },
-          { label: 'Active Enrollments', value: activeEnrollments.length, color: 'text-emerald-600', trend: '8 active' },
-          { label: "Today's Tasks", value: todayFollowUps.length, color: 'text-amber-600', badge: overdueCount, trend: `${overdueCount} overdue` },
-          { label: 'Pending Billing', value: formatCurrency(Math.max(0, pendingBilling)), color: 'text-purple-600', trend: 'Action req.' },
+          { label: 'Total Patients', value: stats?.totalPatients || 0, color: 'text-blue-600', trend: stats?.patientsTrend || 'Loading...' },
+          { label: 'Active Enrollments', value: stats?.activeEnrollments || 0, color: 'text-emerald-600', trend: stats?.enrollmentsTrend || 'Loading...' },
+          { label: "Today's Tasks", value: stats?.todayTasks || 0, color: 'text-amber-600', badge: stats?.overdueTasks || 0, trend: stats?.tasksTrend || 'Loading...' },
+          { label: 'Pending Billing', value: formatCurrency(stats?.pendingBilling || 0), color: 'text-purple-600', trend: stats?.billingTrend || 'Loading...' },
         ].map((m, i) => (
           <Card key={i} className="border-none shadow-sm col-span-1">
             <CardContent className="p-4 flex flex-col justify-between h-full">
@@ -185,7 +131,7 @@ export default function Dashboard() {
                   {m.trend}
                 </p>
                 {m.badge ? (
-                  <Badge variant="destructive" className="rounded-full h-4 px-1 py-0 text-[8px] font-bold">{m.badge}</Badge>
+                   <Badge variant="destructive" className="rounded-full h-4 px-1 py-0 text-[8px] font-bold">{m.badge}</Badge>
                 ) : null}
               </div>
             </CardContent>
@@ -203,21 +149,21 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent className="p-0 overflow-auto max-h-[250px]">
             <div className="divide-y divide-border/50">
-              {todayFollowUps.length === 0 ? (
+              {priorityTasks.length === 0 ? (
                 <div className="py-8 text-center text-sm text-muted-foreground font-medium italic">All caught up! 🎉</div>
               ) : (
-                todayFollowUps.slice(0, 5).map(f => {
-                  const lead = activeLeads.find(l => l.id === f.leadId);
-                  const overdue = isPast(f.followUpDate) && !isToday(f.followUpDate);
-                  const priorityMeta = getStaticLookup('FollowUpPriority', f.priority);
+                priorityTasks.map(f => {
+                  const priorityMeta = {
+                    bgColor: f.priority === 'High' ? 'bg-red-500' : f.priority === 'Medium' ? 'bg-amber-500' : 'bg-blue-500'
+                  };
                   return (
                     <Link key={f.id} to="/follow-ups" className="block transition-colors hover:bg-muted/30">
                       <div className="flex items-center gap-4 px-5 py-3">
                         <div className={`h-2 w-2 shrink-0 rounded-full ${priorityMeta.bgColor} shadow-sm`} />
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold">{lead?.name || 'Unknown'}</p>
-                          <p className={`text-[10px] ${overdue ? 'text-destructive font-bold' : 'text-muted-foreground'}`}>
-                            {overdue ? 'Overdue' : 'Due today'} • {f.notes || 'No notes'}
+                          <p className="truncate text-sm font-semibold">{f.leadName}</p>
+                          <p className={`text-[10px] ${f.isOverdue ? 'text-destructive font-bold' : 'text-muted-foreground'}`}>
+                            {f.isOverdue ? 'Overdue' : 'Due today'} • {f.notes || 'No notes'}
                           </p>
                         </div>
                         <ChevronRight className="h-4 w-4 text-muted-foreground/30" />
