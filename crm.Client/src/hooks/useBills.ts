@@ -24,6 +24,7 @@ export function useAddPayment() {
       queryClient.invalidateQueries({ queryKey: BILLS_QUERY_KEY });
       // Also invalidate lead details to update the total balance in overview
       queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       toast.success(`Payment of ₹${amount.toLocaleString()} recorded successfully`);
     },
     onError: (error: any) => {
@@ -40,10 +41,46 @@ export function useDeleteBill() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: BILLS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       toast.success('Bill moved to trash successfully');
     },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to delete bill');
+    }
+  });
+}
+
+export function useCreateBill() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (request: any) => billsApi.create(request),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: BILLS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      toast.success('Bill created successfully');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to create bill');
+    }
+  });
+}
+
+export function useDeletePayment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ billId, paymentId }: { billId: string; paymentId: string }) => 
+      billsApi.deletePayment(billId, paymentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: BILLS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      toast.success('Payment deleted successfully');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to delete payment');
     }
   });
 }

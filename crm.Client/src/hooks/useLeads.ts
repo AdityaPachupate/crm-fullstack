@@ -52,6 +52,7 @@ export function useCreateLead() {
     mutationFn: (lead: Omit<Lead, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>) => leadsApi.create(lead),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: LEADS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       toast.success('Lead created successfully');
     },
     onError: (error: any) => {
@@ -98,6 +99,7 @@ export function useUpdateLead() {
       // and ensure the server state is truth
       queryClient.invalidateQueries({ queryKey: LEADS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: [...LEADS_QUERY_KEY, id] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
     },
   });
 }
@@ -109,6 +111,7 @@ export function useDeleteLead() {
     mutationFn: (id: string) => leadsApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: LEADS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       toast.success('Lead deleted successfully');
     },
     onError: (error: any) => {

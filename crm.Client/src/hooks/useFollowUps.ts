@@ -21,6 +21,7 @@ export function useFollowUps() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: LEADS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: FOLLOWUPS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       toast.success('Follow-up marked as complete');
     },
     onError: (error: any) => {
@@ -33,6 +34,7 @@ export function useFollowUps() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: LEADS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: FOLLOWUPS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       toast.success('Follow-up deleted');
     },
     onError: (error: any) => {
@@ -56,6 +58,7 @@ export function useCreateFollowUp() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: LEADS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: FOLLOWUPS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       toast.success('Follow-up scheduled');
     },
     onError: (error: any) => {

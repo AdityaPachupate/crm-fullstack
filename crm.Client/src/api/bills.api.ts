@@ -44,5 +44,12 @@ export const billsApi = {
     return apiClient<{ success: boolean }>(`/api/bills/${billId}${isPermanent ? '?isPermanent=true' : ''}`, {
       method: 'DELETE',
     });
+  },
+
+  create: async (request: any): Promise<any> => {
+    return apiClient<any>('/api/bills', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
   }
 };

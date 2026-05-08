@@ -30,6 +30,7 @@ export function useRejoins(params?: GetRejoinsParams) {
         queryClient.invalidateQueries({ queryKey: REJOINS_QUERY_KEY });
         queryClient.invalidateQueries({ queryKey: LEADS_QUERY_KEY });
         queryClient.invalidateQueries({ queryKey: BILLS_QUERY_KEY });
+        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       }, 500);
       toast.success('Rejoin created successfully');
     },
@@ -47,6 +48,7 @@ export function useRejoins(params?: GetRejoinsParams) {
         queryClient.invalidateQueries({ queryKey: [...LEADS_QUERY_KEY, variables.leadId] });
       }
       queryClient.invalidateQueries({ queryKey: BILLS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       toast.success('Rejoin updated successfully');
     },
     onError: (error: any) => {
@@ -62,6 +64,7 @@ export function useRejoins(params?: GetRejoinsParams) {
         queryClient.invalidateQueries({ queryKey: REJOINS_QUERY_KEY });
         queryClient.invalidateQueries({ queryKey: LEADS_QUERY_KEY });
         queryClient.invalidateQueries({ queryKey: BILLS_QUERY_KEY });
+        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       }, 500);
       toast.success('Rejoin deleted successfully');
     },
@@ -76,6 +79,7 @@ export function useRejoins(params?: GetRejoinsParams) {
       queryClient.invalidateQueries({ queryKey: REJOINS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: LEADS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: BILLS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       toast.success('Rejoin restored successfully');
     },
     onError: (error: any) => {
