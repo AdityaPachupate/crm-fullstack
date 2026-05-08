@@ -5,7 +5,6 @@ export default function AppShell() {
   return (
     <div className="mx-auto min-h-screen max-w-lg bg-background pb-24">
       <Outlet />
-      <BottomNav />
     </div>
   );
 }

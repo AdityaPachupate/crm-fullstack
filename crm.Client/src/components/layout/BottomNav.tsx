@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, PhoneCall, MoreHorizontal } from 'lucide-react';
+import { LayoutDashboard, Users, PhoneCall, MoreHorizontal, ChevronDown, Menu } from 'lucide-react';
 import { usePrefetch } from '@/hooks/usePrefetch';
+import { cn } from '@/lib/utils';
+import { Button } from '../ui/button';
 
 const tabs = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -12,6 +15,7 @@ const tabs = [
 export default function BottomNav() {
   const location = useLocation();
   const { prefetchLeadsList, prefetchTodayFollowups } = usePrefetch();
+  const [isMinimized, setIsMinimized] = useState(false);
 
   const handleMouseEnter = (to: string) => {
     if (to === '/leads') prefetchLeadsList();
@@ -19,9 +23,12 @@ export default function BottomNav() {
   };
 
   return (
-    <nav className="fixed inset-x-0 bottom-3 z-50">
-      <div className="mx-auto max-w-lg px-3">
-        <div className="flex items-center rounded-2xl border bg-card/95 px-2 py-1.5 shadow-lg backdrop-blur-sm">
+    <div className="fixed bottom-3 right-0 left-0 z-50 flex justify-center pointer-events-none">
+      <div className="max-w-lg w-full px-3 flex items-center justify-end gap-2 pointer-events-auto">
+        <div className={cn(
+          "flex-1 h-14 flex items-center rounded-2xl border bg-card/95 px-2 shadow-lg backdrop-blur-sm transition-all duration-300 origin-right",
+          isMinimized ? "scale-0 opacity-0 pointer-events-none w-0 absolute" : "scale-100 opacity-100"
+        )}>
           {tabs.map(({ to, icon: Icon, label }) => {
             const active = to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
             return (
@@ -41,7 +48,20 @@ export default function BottomNav() {
             );
           })}
         </div>
+
+        <Button
+          onClick={() => setIsMinimized(!isMinimized)}
+          className={cn(
+            "h-14 w-14 shadow-lg transition-all duration-300 ease-in-out flex items-center justify-center backdrop-blur-sm",
+            isMinimized 
+              ? "rounded-full bg-slate-900 text-white" 
+              : "rounded-2xl bg-card/95 border text-muted-foreground hover:text-foreground"
+          )}
+          size="icon"
+        >
+          {isMinimized ? <Menu className="h-6 w-6" /> : <ChevronDown className="h-5 w-5" />}
+        </Button>
       </div>
-    </nav>
+    </div>
   );
 }

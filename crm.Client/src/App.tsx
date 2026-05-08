@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CRMProvider } from "@/context/CRMContext";
 import AppShell from "@/components/layout/AppShell";
+import BottomNav from "@/components/layout/BottomNav";
 import Dashboard from "@/pages/Dashboard";
 import LeadsList from "@/pages/LeadsList";
 import LeadForm from "@/pages/LeadForm";
@@ -80,6 +81,7 @@ const App = () => (
             <Route path="/trash" element={<TrashManagement />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <BottomNav />
         </BrowserRouter>
       </CRMProvider>
     </TooltipProvider>
