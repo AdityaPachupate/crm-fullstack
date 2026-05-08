@@ -146,3 +146,32 @@ export function useRestoreLead() {
     }
   });
 }
+
+export function useBulkImportLeads() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (file: File) => leadsApi.bulkImport(file),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: LEADS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      
+      const { successCount, duplicateCount, errors } = data;
+      
+      if (successCount > 0) {
+        toast.success(`Successfully imported ${successCount} patients`);
+      }
+      
+      if (duplicateCount > 0) {
+        toast.info(`${duplicateCount} patients skipped (already exist)`);
+      }
+      
+      if (errors && errors.length > 0) {
+        toast.error(`Errors in ${errors.length} rows. Check CSV format.`);
+      }
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to import patients');
+    }
+  });
+}

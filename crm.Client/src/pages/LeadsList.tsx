@@ -12,8 +12,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { maskPhone, relativeDate } from '@/lib/helpers';
-import { ChevronDown, Plus, Search, CheckCircle2, Stethoscope, Phone, ChevronRight, MoreVertical, Pencil, Trash2, X, UserPlus } from 'lucide-react';
-import { useLeads, useDeleteLead } from '@/hooks/useLeads';
+import { ChevronDown, Plus, Search, CheckCircle2, Stethoscope, Phone, ChevronRight, MoreVertical, Pencil, Trash2, X, UserPlus, Upload, FileDown } from 'lucide-react';
+import { useLeads, useDeleteLead, useBulkImportLeads } from '@/hooks/useLeads';
 import { useLeadsStore } from '@/store/useLeadsStore';
 import { usePrefetch } from '@/hooks/usePrefetch';
 import { LeadFilters } from '@/components/leads/LeadFilters';
@@ -29,18 +29,46 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Lead, LeadStatus } from '@/types';
-
 import { APP_CONFIG } from '@/constants';
 import { getAllStaticCodes } from '@/lib/lookup-registry';
-
 
 export default function LeadsList() {
   const navigate = useNavigate();
   const { search, setSearch, statusFilter, setStatusFilter } = useLeadsStore();
-  const { data, isLoading: loading, error } = useLeads({ status: statusFilter, search });
+  const { data, isLoading: loading, error } = useLeads({ status: statusFilter, search, pageSize: 100 });
   const { prefetchLead } = usePrefetch();
   const deleteMutation = useDeleteLead();
+  const bulkImportMutation = useBulkImportLeads();
   const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      await bulkImportMutation.mutateAsync(file);
+      e.target.value = ''; // Reset
+    }
+  };
+
+  const downloadSampleCSV = () => {
+    const headers = ['Name', 'Phone', 'Source', 'Status', 'Reason'];
+    const sampleData = [
+      ['Rahul Sharma', '9876543210', 'Facebook', 'New', 'Wants weight loss'],
+      ['Anjali Gupta', '8765432109', 'Google', 'Contacted', 'Diabetes concern']
+    ];
+    
+    const csvContent = [
+      headers.join(','),
+      ...sampleData.map(row => row.join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'patient_import_sample.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
   
   // Debounce search
   const [localSearch, setLocalSearch] = useState(search);
@@ -131,7 +159,40 @@ export default function LeadsList() {
               </button>
             )}
           </div>
-          <LeadFilters />
+          <div className="flex items-center gap-1.5">
+            <input
+              type="file"
+              id="bulk-import-input"
+              accept=".csv"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="icon" variant="outline" className="h-9 w-9 rounded-lg border-slate-200 text-slate-600 shrink-0">
+                  <Upload className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 p-1 rounded-xl shadow-xl border-slate-200">
+                <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-slate-400 font-bold px-2 py-1.5">Import Options</DropdownMenuLabel>
+                <DropdownMenuItem 
+                  className="rounded-lg gap-2 py-2"
+                  onClick={() => document.getElementById('bulk-import-input')?.click()}
+                >
+                  <Upload className="h-4 w-4 text-slate-500" />
+                  <span className="font-medium text-slate-700">Upload CSV</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className="rounded-lg gap-2 py-2"
+                  onClick={downloadSampleCSV}
+                >
+                  <FileDown className="h-4 w-4 text-slate-500" />
+                  <span className="font-medium text-slate-700">Download Sample</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <LeadFilters />
+          </div>
         </div>
 
         <div className="flex items-center gap-2">

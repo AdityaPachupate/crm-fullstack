@@ -3,10 +3,15 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://crm-api-1ugj
 export async function apiClient<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
   
-  const headers = {
-    'Content-Type': 'application/json',
-    ...options.headers,
+  const isFormData = options.body instanceof FormData;
+  
+  const headers: Record<string, string> = {
+    ...options.headers as Record<string, string>,
   };
+
+  if (!isFormData && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json';
+  }
 
   const response = await fetch(url, { ...options, headers });
 

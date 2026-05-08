@@ -77,5 +77,15 @@ export const leadsApi = {
   
   restore: async (id: string): Promise<void> => {
     await apiClient(`/api/leads/${id}/restore`, { method: 'POST' });
+  },
+
+  bulkImport: async (file: File): Promise<any> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    return await apiClient('/api/leads/bulk-import', {
+      method: 'POST',
+      body: formData,
+    });
   }
 };
