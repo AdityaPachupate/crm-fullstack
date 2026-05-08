@@ -12,6 +12,11 @@ namespace CRM.API.Common.Extensions
             using IServiceScope scope = app.Services.CreateScope();
             AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             db.Database.Migrate();
+
+            if (app.Environment.IsDevelopment())
+            {
+                DbSeeder.SeedAsync(db).GetAwaiter().GetResult();
+            }
         }
     }
 }
