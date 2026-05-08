@@ -21,7 +21,7 @@ export interface GetRejoinsParams {
   pageNumber?: number;
   pageSize?: number;
   search?: string;
-  isDeleted?: boolean;
+  isTrash?: boolean;
 }
 
 export interface RejoinsResponse {
@@ -38,7 +38,7 @@ export const rejoinsApi = {
     if (params?.pageNumber) query.set('pageNumber', params.pageNumber.toString());
     if (params?.pageSize) query.set('pageSize', params.pageSize.toString());
     if (params?.search) query.set('search', params.search);
-    if (params?.isDeleted !== undefined) query.set('isDeleted', params.isDeleted.toString());
+    if (params?.isTrash !== undefined) query.set('isTrash', params.isTrash.toString());
     
     return apiClient<RejoinsResponse>(`/api/rejoins?${query.toString()}`);
   },

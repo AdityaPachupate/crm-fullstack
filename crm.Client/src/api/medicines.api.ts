@@ -17,7 +17,10 @@ export const medicinesApi = {
       body: JSON.stringify({ id, ...medicine }),
     });
   },
-  delete: async (id: string): Promise<void> => {
-    await apiClient(`/api/medicines/${id}`, { method: 'DELETE' });
+  delete: async (id: string, isPermanent: boolean = false): Promise<void> => {
+    await apiClient(`/api/medicines/${id}${isPermanent ? '?isPermanent=true' : ''}`, { method: 'DELETE' });
+  },
+  restore: async (id: string): Promise<void> => {
+    await apiClient(`/api/medicines/${id}/restore`, { method: 'POST' });
   }
 };

@@ -62,7 +62,7 @@ export default function EnrollmentsList() {
 
   const confirmDelete = () => {
     if (enrollmentToDelete) {
-      deleteEnrollment.mutate(enrollmentToDelete);
+      deleteEnrollment.mutate({ id: enrollmentToDelete });
       setEnrollmentToDelete(null);
     }
   };

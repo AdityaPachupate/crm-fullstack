@@ -305,7 +305,7 @@ export default function LeadsList() {
               className="flex-1 rounded-xl h-11 text-xs font-semibold m-0 bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={async () => {
                 if (leadToDelete) {
-                  await deleteMutation.mutateAsync(leadToDelete.id);
+                  await deleteMutation.mutateAsync({ id: leadToDelete.id });
                   setLeadToDelete(null);
                 }
               }}

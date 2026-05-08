@@ -258,7 +258,7 @@ export default function LeadDetail() {
   const handleDeleteEnrollment = async () => {
     if (!deletingEnrollmentId) return;
     try {
-      await deleteEnrollment.mutateAsync(deletingEnrollmentId);
+      await deleteEnrollment.mutateAsync({ id: deletingEnrollmentId });
       toast.success("Enrollment deleted successfully");
       setDeletingEnrollmentId(null);
     } catch (error) {
@@ -771,7 +771,7 @@ export default function LeadDetail() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction 
               onClick={async () => {
-                await deleteLeadMutation.mutateAsync(id!);
+                await deleteLeadMutation.mutateAsync({ id: id! });
                 navigate('/leads');
               }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"

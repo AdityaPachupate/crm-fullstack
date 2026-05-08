@@ -20,9 +20,9 @@ namespace CRM.API.Features.Lookups.GetLookups
         {
             logger.LogInformation("Fetching lookups (Page={Page}, Size={Size}, Category={Category})", query.PageNumber, query.PageSize, query.Category);
 
-            var queryable = db.LookupValues
-                .AsNoTracking()
-                .Where(l => !l.IsDeleted);
+            var queryable = query.IncludeDeleted 
+                ? db.LookupValues.IgnoreQueryFilters().AsNoTracking()
+                : db.LookupValues.AsNoTracking().Where(l => !l.IsDeleted);
 
             if (!string.IsNullOrEmpty(query.Category))
             {

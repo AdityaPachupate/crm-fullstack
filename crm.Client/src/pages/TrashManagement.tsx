@@ -1,107 +1,265 @@
 import { useState } from 'react';
-import { useCRM } from '@/context/CRMContext';
+import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import PageHeader from '@/components/layout/PageHeader';
-import { toast } from 'sonner';
+import { Card, CardContent } from '@/components/ui/card';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription, 
+  DialogFooter 
+} from '@/components/ui/dialog';
+import { 
+  Loader2, 
+  Trash2, 
+  Undo2, 
+  ArrowLeft, 
+  User, 
+  Receipt, 
+  RefreshCw, 
+  Calendar, 
+  Pill, 
+  Package as PackageIcon,
+  Search,
+  X
+} from 'lucide-react';
+import { useLeads, useDeleteLead, useRestoreLead } from '@/hooks/useLeads';
+import { useAllEnrollments, useEnrollments } from '@/hooks/useEnrollments';
+import { useBills, useDeleteBill, useRestoreBill } from '@/hooks/useBills';
 import { useRejoins } from '@/hooks/useRejoins';
-import { Loader2 } from 'lucide-react';
+import { useMedicines, useMedicineMutations } from '@/hooks/useMedicines';
+import { usePackages, usePackageMutations } from '@/hooks/usePackages';
+import { useLookups, useLookupMutations } from '@/hooks/useLookups';
+import { formatCurrency, formatDate } from '@/lib/helpers';
+import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
 
-type Entity = 'leads' | 'followUps' | 'enrollments' | 'bills' | 'rejoins';
+type EntityType = 'leads' | 'enrollments' | 'bills' | 'rejoins' | 'medicines' | 'packages' | 'lookups';
 
 export default function TrashManagement() {
-  const crm = useCRM();
-  const [confirmId, setConfirmId] = useState<{ entity: Entity; id: string; name: string } | null>(null);
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<EntityType>('leads');
+  const [search, setSearch] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string; type: EntityType } | null>(null);
 
-  // Rejoins Hook
-  const { data: trashedRejoinsData, isLoading: rejoinsLoading, restoreRejoin, deleteRejoin } = useRejoins({ isDeleted: true });
-  const trashedRejoins = trashedRejoinsData?.items || [];
+  // Hooks
+  const { leads, isLoading: leadsLoading } = useLeads({ isTrash: true });
+  const { data: enrollmentsData, isLoading: enrollmentsLoading } = useAllEnrollments({ isTrash: true });
+  const { data: billsData, isLoading: billsLoading } = useBills(undefined, true);
+  const { data: rejoinsData, isLoading: rejoinsLoading } = useRejoins({ isTrash: true });
+  const { data: medicines, isLoading: medicinesLoading } = useMedicines(true);
+  const { data: packages, isLoading: packagesLoading } = usePackages(true);
+  const { data: lookups, isLoading: lookupsLoading } = useLookups(true);
 
-  const entities: { 
-    key: Entity; 
-    label: string; 
-    items: any[]; 
-    restore: (id: string) => void; 
-    hardDelete: (id: string) => void; 
-    getName: (item: any) => string;
-    loading?: boolean;
-  }[] = [
-    { key: 'leads', label: 'Patients', items: crm.leads.filter(l => l.deletedAt), restore: crm.restoreLead, hardDelete: crm.hardDeleteLead, getName: (l) => l.name },
-    { key: 'followUps', label: 'Follow-ups', items: crm.followUps.filter(f => f.deletedAt), restore: crm.restoreFollowUp, hardDelete: crm.hardDeleteFollowUp, getName: (f) => { const lead = crm.leads.find(l => l.id === f.leadId); return `${lead?.name || 'Unknown'} - ${f.followUpDate}`; } },
-    { key: 'enrollments', label: 'Enrollments', items: crm.enrollments.filter(e => e.deletedAt), restore: crm.restoreEnrollment, hardDelete: crm.hardDeleteEnrollment, getName: (e) => e.packageName },
-    { key: 'bills', label: 'Bills', items: crm.bills.filter(b => b.deletedAt), restore: crm.restoreBill, hardDelete: crm.hardDeleteBill, getName: (b) => `Bill ${new Date(b.createdAt).toLocaleDateString()}` },
-    { 
-      key: 'rejoins', 
-      label: 'Rejoins', 
-      items: trashedRejoins, 
-      restore: (id) => restoreRejoin.mutate(id), 
-      hardDelete: (id) => deleteRejoin.mutate({ id, isPermanent: true }), 
-      getName: (r) => r.packageName,
-      loading: rejoinsLoading
-    },
-  ];
+  // Mutation Hooks
+  const restoreLeadMut = useRestoreLead();
+  const deleteLeadMut = useDeleteLead();
+  const { restoreEnrollment, deleteEnrollment } = useEnrollments();
+  const restoreBillMut = useRestoreBill();
+  const deleteBillMut = useDeleteBill();
+  const { restoreRejoin, deleteRejoin } = useRejoins();
+  const { restoreMedicine, deleteMedicine } = useMedicineMutations();
+  const { restorePackage, deletePackage } = usePackageMutations();
+  const { restoreLookup, deleteLookup } = useLookupMutations(true);
 
-  const handleHardDelete = () => {
-    if (!confirmId) return;
-    const entity = entities.find(e => e.key === confirmId.entity);
-    entity?.hardDelete(confirmId.id);
-    if (confirmId.entity !== 'rejoins') {
-      toast.success('Permanently deleted');
-    }
-    setConfirmId(null);
+  const getFilteredItems = (items: any[], nameKey: string) => {
+    return (items || []).filter(item => 
+      (item[nameKey] || '').toLowerCase().includes(search.toLowerCase())
+    );
   };
 
+  const handleRestore = (type: EntityType, id: string) => {
+    switch (type) {
+      case 'leads': restoreLeadMut.mutate(id); break;
+      case 'enrollments': restoreEnrollment.mutate(id); break;
+      case 'bills': restoreBillMut.mutate(id); break;
+      case 'rejoins': restoreRejoin.mutate(id); break;
+      case 'medicines': restoreMedicine.mutate(id); break;
+      case 'packages': restorePackage.mutate(id); break;
+      case 'lookups': restoreLookup(id); break;
+    }
+  };
+
+  const handlePermanentDelete = () => {
+    if (!confirmDelete) return;
+    const { id, type } = confirmDelete;
+    switch (type) {
+      case 'leads': deleteLeadMut.mutate({ id, isPermanent: true }); break;
+      case 'enrollments': deleteEnrollment.mutate({ id, isPermanent: true }); break;
+      case 'bills': deleteBillMut.mutate({ billId: id, isPermanent: true }); break;
+      case 'rejoins': deleteRejoin.mutate({ id, isPermanent: true }); break;
+      case 'medicines': deleteMedicine.mutate({ id, isPermanent: true }); break;
+      case 'packages': deletePackage.mutate({ id, isPermanent: true }); break;
+      case 'lookups': deleteLookup({ id, isPermanent: true }); break;
+    }
+    setConfirmDelete(null);
+  };
+
+  const sections: Record<EntityType, { label: string; icon: any; items: any[]; loading: boolean; nameKey: string; subKey?: string }> = {
+    leads: { label: 'Patients', icon: User, items: leads, loading: leadsLoading, nameKey: 'name' },
+    enrollments: { label: 'Enrollments', icon: Calendar, items: enrollmentsData?.items || [], loading: enrollmentsLoading, nameKey: 'leadName', subKey: 'packageName' },
+    bills: { label: 'Bills', icon: Receipt, items: billsData?.items || [], loading: billsLoading, nameKey: 'leadName' },
+    rejoins: { label: 'Rejoins', icon: RefreshCw, items: rejoinsData?.items || [], loading: rejoinsLoading, nameKey: 'leadName', subKey: 'packageName' },
+    medicines: { label: 'Medicines', icon: Pill, items: medicines || [], loading: medicinesLoading, nameKey: 'name' },
+    packages: { label: 'Packages', icon: PackageIcon, items: packages || [], loading: packagesLoading, nameKey: 'name' },
+    lookups: { label: 'Lookups', icon: Search, items: (lookups || []).filter(l => l.deletedAt), loading: lookupsLoading, nameKey: 'displayName', subKey: 'category' },
+  };
+
+  const activeSection = sections[activeTab];
+  const filteredItems = getFilteredItems(activeSection.items, activeSection.nameKey);
+
   return (
-    <div>
-      <PageHeader title="Trash" back />
-      <div className="p-5">
-        <Tabs defaultValue="leads">
-          <TabsList className="w-full bg-muted h-9 overflow-x-auto no-scrollbar justify-start">
-            {entities.map(e => (
-              <TabsTrigger key={e.key} value={e.key} className="flex-1 text-[10px] uppercase font-bold tracking-wider">
-                {e.label} {!e.loading && e.items.length > 0 ? `(${e.items.length})` : ''}
-              </TabsTrigger>
+    <div className="flex flex-col min-h-screen bg-slate-50 pb-20">
+      {/* Header Area */}
+      <div className="bg-white px-6 pt-8 pb-4 border-b border-slate-100 sticky top-0 z-30">
+        <div className="flex items-center gap-4 mb-6">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => navigate(-1)}
+            className="h-10 w-10 rounded-full hover:bg-slate-50"
+          >
+            <ArrowLeft className="h-5 w-5 text-slate-600" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Trash Management</h1>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5">Recover or permanently remove data</p>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Input 
+              placeholder={`Search deleted ${activeSection.label.toLowerCase()}...`} 
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-11 h-12 bg-slate-50 border-none rounded-xl text-sm font-medium focus-visible:ring-indigo-500"
+            />
+            {search && (
+              <button onClick={() => setSearch('')} className="absolute right-4 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-200 rounded-full">
+                <X className="h-3 w-3 text-slate-400" />
+              </button>
+            )}
+          </div>
+
+          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+            {(Object.entries(sections) as [EntityType, any][]).map(([key, section]) => (
+              <Button
+                key={key}
+                variant={activeTab === key ? 'default' : 'secondary'}
+                size="sm"
+                onClick={() => { setActiveTab(key); setSearch(''); }}
+                className={cn(
+                  "h-9 px-4 rounded-full text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-2 shrink-0",
+                  activeTab === key ? "bg-slate-900 text-white shadow-md" : "bg-white text-slate-500 hover:bg-slate-100 border border-slate-100"
+                )}
+              >
+                <section.icon className="h-3.5 w-3.5" />
+                {section.label}
+                {section.items.length > 0 && (
+                  <span className={cn(
+                    "ml-1 px-1.5 py-0.5 rounded-full text-[9px]",
+                    activeTab === key ? "bg-white/20 text-white" : "bg-slate-100 text-slate-400"
+                  )}>
+                    {section.items.length}
+                  </span>
+                )}
+              </Button>
             ))}
-          </TabsList>
-          {entities.map(e => (
-            <TabsContent key={e.key} value={e.key} className="mt-4">
-              {e.loading ? (
-                <div className="py-20 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-              ) : e.items.length === 0 ? (
-                <p className="py-16 text-center text-sm text-muted-foreground">No trashed {e.label.toLowerCase()}</p>
-              ) : (
-                <div className="divide-y rounded-lg border">
-                  {e.items.map(item => (
-                    <div key={item.id} className="px-4 py-3">
-                      <p className="text-sm font-medium">{e.getName(item)}</p>
-                      <p className="text-xs text-muted-foreground">Deleted {new Date(item.deletedAt || item.createdAt).toLocaleDateString()}</p>
-                      <div className="mt-2 flex gap-2">
-                        <Button size="sm" variant="outline" className="rounded-full text-xs text-primary h-7" onClick={() => { e.restore(item.id); if(e.key !== 'rejoins') toast.success('Restored'); }}>Restore</Button>
-                        <Button size="sm" variant="outline" className="rounded-full text-xs text-destructive h-7" onClick={() => setConfirmId({ entity: e.key, id: item.id, name: e.getName(item) })}>Delete permanently</Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-          ))}
-        </Tabs>
+          </div>
+        </div>
       </div>
 
-      <Dialog open={!!confirmId} onOpenChange={open => !open && setConfirmId(null)}>
-        <DialogContent>
+      {/* List Content */}
+      <div className="p-6">
+        {activeSection.loading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <Loader2 className="h-10 w-10 text-indigo-600 animate-spin" />
+            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Loading trash...</p>
+          </div>
+        ) : filteredItems.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
+            <div className="h-20 w-20 rounded-3xl bg-slate-100 flex items-center justify-center">
+              <Trash2 className="h-10 w-10 text-slate-200" />
+            </div>
+            <div>
+              <p className="text-sm font-black text-slate-900">Trash is empty</p>
+              <p className="text-xs text-slate-400 font-medium max-w-[240px] mt-2 leading-relaxed">
+                Great! There are no deleted {activeSection.label.toLowerCase()} in your system history.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filteredItems.map((item) => (
+              <Card key={item.id} className="border-none shadow-sm overflow-hidden bg-white hover:shadow-md transition-shadow">
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-4">
+                      <div className="h-10 w-10 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center">
+                        <activeSection.icon className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-black text-slate-900 text-sm">
+                          {item[activeSection.nameKey] || 'No Name'}
+                        </h3>
+                        {activeSection.subKey && item[activeSection.subKey] && (
+                          <p className="text-[11px] font-bold text-slate-400 mt-0.5">{item[activeSection.subKey]}</p>
+                        )}
+                        <p className="text-[10px] text-slate-400 font-medium mt-1">
+                          Deleted {formatDate(item.deletedAt || item.updatedAt || item.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-50">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex-1 h-9 rounded-xl text-[10px] font-black uppercase tracking-wider border-slate-100 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-100 transition-all"
+                      onClick={() => handleRestore(activeTab, item.id)}
+                    >
+                      <Undo2 className="h-3.5 w-3.5 mr-2" /> Restore
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex-1 h-9 rounded-xl text-[10px] font-black uppercase tracking-wider border-slate-100 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-100 transition-all"
+                      onClick={() => setConfirmDelete({ id: item.id, name: item[activeSection.nameKey], type: activeTab })}
+                    >
+                      <Trash2 className="h-3.5 w-3.5 mr-2" /> Wipe Forever
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Permanent Delete Confirmation */}
+      <Dialog open={!!confirmDelete} onOpenChange={(open) => !open && setConfirmDelete(null)}>
+        <DialogContent className="sm:max-w-[425px] w-[95vw] rounded-3xl border-none p-6 gap-6">
           <DialogHeader>
-            <DialogTitle>Delete permanently?</DialogTitle>
-            <DialogDescription>This cannot be undone. "{confirmId?.name}" will be permanently removed.</DialogDescription>
+            <DialogTitle className="text-xl font-black text-slate-900 tracking-tight">Wipe Forever?</DialogTitle>
+            <DialogDescription className="text-sm font-medium text-slate-500 mt-2 leading-relaxed">
+              Are you sure you want to permanently delete <span className="font-black text-slate-900">"{confirmDelete?.name}"</span>? 
+              This action <span className="text-rose-500 font-bold underline">cannot be undone</span> and all related data will be erased forever.
+            </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="flex gap-2">
-            <Button variant="outline" className="flex-1 rounded-full" onClick={() => setConfirmId(null)}>Cancel</Button>
-            <Button variant="destructive" className="flex-1 rounded-full" onClick={handleHardDelete}>Delete forever</Button>
+          <DialogFooter className="flex flex-row gap-3">
+            <Button variant="ghost" className="flex-1 h-12 rounded-2xl font-bold text-slate-600" onClick={() => setConfirmDelete(null)}>
+              Keep it
+            </Button>
+            <Button variant="destructive" className="flex-1 h-12 rounded-2xl font-bold bg-rose-500 hover:bg-rose-600 shadow-lg shadow-rose-100" onClick={handlePermanentDelete}>
+              Yes, Delete Forever
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
   );
 }
-

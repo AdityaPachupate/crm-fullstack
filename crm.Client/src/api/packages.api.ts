@@ -36,7 +36,10 @@ export const packagesApi = {
       }),
     });
   },
-  delete: async (id: string): Promise<void> => {
-    await apiClient(`/api/packages/${id}`, { method: 'DELETE' });
+  delete: async (id: string, isPermanent: boolean = false): Promise<void> => {
+    await apiClient(`/api/packages/${id}${isPermanent ? '?isPermanent=true' : ''}`, { method: 'DELETE' });
+  },
+  restore: async (id: string): Promise<void> => {
+    await apiClient(`/api/packages/${id}/restore`, { method: 'POST' });
   }
 };

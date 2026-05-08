@@ -72,7 +72,7 @@ export function BillCard({ bill, onAddPayment, patientName }: BillCardProps) {
       description: "You can restore it later from the trash section.",
       action: {
         label: "Move to Trash",
-        onClick: () => deleteBillMutation.mutate(bill.id)
+        onClick: () => deleteBillMutation.mutate({ billId: bill.id, isPermanent: false })
       }
     });
   };

@@ -306,7 +306,7 @@ export default function MedicinesList() {
               className="flex-1 rounded-xl h-11 text-xs font-bold m-0 bg-destructive text-white hover:bg-destructive/90"
               onClick={async () => {
                 if (medicineToDelete) {
-                  deleteMedicine.mutate(medicineToDelete, {
+                  deleteMedicine.mutate({ id: medicineToDelete }, {
                     onSuccess: () => setMedicineToDelete(null)
                   });
                 }

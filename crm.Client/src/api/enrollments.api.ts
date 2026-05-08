@@ -36,8 +36,11 @@ export const enrollmentsApi = {
       body: JSON.stringify(request),
     });
   },
-  delete: async (id: string): Promise<void> => {
-    await apiClient(`/api/enrollments/${id}`, { method: 'DELETE' });
+  delete: async (id: string, isPermanent: boolean = false): Promise<void> => {
+    await apiClient(`/api/enrollments/${id}${isPermanent ? '?isPermanent=true' : ''}`, { method: 'DELETE' });
+  },
+  restore: async (id: string): Promise<void> => {
+    await apiClient(`/api/enrollments/${id}/restore`, { method: 'POST' });
   },
   getAll: async (params?: { 
     pageNumber?: number; 

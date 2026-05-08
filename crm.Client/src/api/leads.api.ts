@@ -11,6 +11,7 @@ export const leadsApi = {
     if (params.reason && params.reason !== 'All') query.append('reason', params.reason);
     if (params.hasEnrollment !== undefined && params.hasEnrollment !== 'All') query.append('hasEnrollment', params.hasEnrollment.toString());
     if (params.hasMedicine !== undefined && params.hasMedicine !== 'All') query.append('hasMedicine', params.hasMedicine.toString());
+    if (params.isTrash !== undefined) query.append('isTrash', params.isTrash.toString());
     if (params.pageNumber) query.append('pageNumber', params.pageNumber.toString());
     if (params.pageSize) query.append('pageSize', params.pageSize.toString());
     
@@ -70,7 +71,11 @@ export const leadsApi = {
     return data;
   },
 
-  delete: async (id: string): Promise<void> => {
-    await apiClient(`/api/leads/${id}`, { method: 'DELETE' });
+  delete: async (id: string, isPermanent: boolean = false): Promise<void> => {
+    await apiClient(`/api/leads/${id}${isPermanent ? '?isPermanent=true' : ''}`, { method: 'DELETE' });
+  },
+  
+  restore: async (id: string): Promise<void> => {
+    await apiClient(`/api/leads/${id}/restore`, { method: 'POST' });
   }
 };

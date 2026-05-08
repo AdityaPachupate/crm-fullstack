@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { Lead, LeadStatus, FollowUp, TreatmentPackage, Medicine, Enrollment, Bill, Rejoin, LookupValue } from '@/types';
 import { generateId, now } from '@/lib/helpers';
 import { toast } from 'sonner';
@@ -100,21 +100,24 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem(APP_CONFIG.STORAGE_KEY, JSON.stringify(state));
   }, [state]);
 
-  const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://crm-api-1ugj.onrender.com').replace(/\/$/, '');
-  const LEADS_API_URL = `${API_BASE_URL}/api/leads`;
-  const LOOKUPS_API_URL = `${API_BASE_URL}/api/lookups`;
+  // Memoize URLs to prevent re-renders from triggering useEffect loops
+  const API_BASE_URL = useMemo(() => 
+    (import.meta.env.VITE_API_BASE_URL || 'https://crm-api-1ugj.onrender.com').replace(/\/$/, ''), 
+  []);
+  
+  const LEADS_API_URL = useMemo(() => `${API_BASE_URL}/api/leads`, [API_BASE_URL]);
+  const LOOKUPS_API_URL = useMemo(() => `${API_BASE_URL}/api/lookups`, [API_BASE_URL]);
 
-  // Initial Sync from API
+  // Initial Sync from API - Run only once on mount
   useEffect(() => {
-    // Sync Leads
-    fetch(LEADS_API_URL)
-      .then(async res => {
+    let isMounted = true;
+
+    const syncLeads = async () => {
+      try {
+        const res = await fetch(LEADS_API_URL);
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        const text = await res.text();
-        return text ? JSON.parse(text) : null;
-      })
-      .then(data => {
-        if (data && data.items) {
+        const data = await res.json();
+        if (isMounted && data && data.items) {
           const apiLeads: Lead[] = data.items.map((item: any) => ({
             id: item.id,
             name: item.name,
@@ -128,18 +131,17 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
           }));
           setState(s => ({ ...s, leads: apiLeads }));
         }
-      })
-      .catch(err => console.error('Failed to sync leads from API:', err));
+      } catch (err) {
+        console.error('Failed to sync leads from API:', err);
+      }
+    };
 
-    // Sync Lookups
-    fetch(`${LOOKUPS_API_URL}?pageSize=200`)
-      .then(async res => {
+    const syncLookups = async () => {
+      try {
+        const res = await fetch(`${LOOKUPS_API_URL}?pageSize=200`);
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        const text = await res.text();
-        return text ? JSON.parse(text) : null;
-      })
-      .then(data => {
-        if (data && data.items) {
+        const data = await res.json();
+        if (isMounted && data && data.items) {
           const apiLookups: LookupValue[] = data.items.map((item: any) => ({
             id: item.id,
             category: item.category,
@@ -151,8 +153,15 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
           }));
           setState(s => ({ ...s, lookups: apiLookups }));
         }
-      })
-      .catch(err => console.error('Failed to sync lookups from API:', err));
+      } catch (err) {
+        console.error('Failed to sync lookups from API:', err);
+      }
+    };
+
+    syncLeads();
+    syncLookups();
+
+    return () => { isMounted = false; };
   }, [LEADS_API_URL, LOOKUPS_API_URL]);
 
   const update = useCallback(<K extends keyof CRMState>(key: K, fn: (arr: CRMState[K]) => CRMState[K]) => {

@@ -57,7 +57,7 @@ export function useEnrollments() {
   });
 
   const deleteEnrollment = useMutation({
-    mutationFn: (id: string) => enrollmentsApi.delete(id),
+    mutationFn: ({ id, isPermanent }: { id: string; isPermanent?: boolean }) => enrollmentsApi.delete(id, isPermanent),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ENROLLMENTS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: LEADS_QUERY_KEY });
@@ -67,6 +67,20 @@ export function useEnrollments() {
     },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to delete enrollment');
+    }
+  });
+
+  const restoreEnrollment = useMutation({
+    mutationFn: (id: string) => enrollmentsApi.restore(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ENROLLMENTS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: LEADS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: BILLS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      toast.success('Enrollment restored successfully');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to restore enrollment');
     }
   });
 
@@ -95,6 +109,7 @@ export function useEnrollments() {
     createEnrollment,
     updateEnrollment,
     deleteEnrollment,
+    restoreEnrollment,
     addPayment,
   };
 }

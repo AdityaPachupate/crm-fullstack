@@ -5,12 +5,14 @@ import { BillsResponse } from '@/types';
 
 export const BILLS_QUERY_KEY = ['bills'];
 
-export function useBills(): UseQueryResult<BillsResponse, Error>;
-export function useBills(leadId: string): UseQueryResult<BillDetailDto[], Error>;
-export function useBills(leadId?: string): UseQueryResult<any, Error> {
+export function useBills(leadId?: string, isTrash: boolean = false): UseQueryResult<any, Error> {
   return useQuery<any, Error>({
-    queryKey: leadId ? [...BILLS_QUERY_KEY, leadId] : BILLS_QUERY_KEY,
-    queryFn: () => leadId ? billsApi.getLeadBills(leadId) : billsApi.getAllBills(),
+    queryKey: leadId 
+      ? [...BILLS_QUERY_KEY, leadId, { isTrash }] 
+      : [...BILLS_QUERY_KEY, { isTrash }],
+    queryFn: () => leadId 
+      ? billsApi.getLeadBills(leadId) 
+      : billsApi.getAllBills(isTrash),
   });
 }
 
@@ -37,15 +39,33 @@ export function useDeleteBill() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (billId: string) => billsApi.deleteBill(billId, false),
+    mutationFn: ({ billId, isPermanent }: { billId: string; isPermanent: boolean }) => 
+      billsApi.deleteBill(billId, isPermanent),
+    onSuccess: (_, { isPermanent }) => {
+      queryClient.invalidateQueries({ queryKey: BILLS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      toast.success(isPermanent ? 'Bill permanently deleted' : 'Bill moved to trash successfully');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to delete bill');
+    }
+  });
+}
+
+export function useRestoreBill() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => billsApi.restore(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: BILLS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ['leads'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-      toast.success('Bill moved to trash successfully');
+      toast.success('Bill restored successfully');
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to delete bill');
+      toast.error(error.message || 'Failed to restore bill');
     }
   });
 }

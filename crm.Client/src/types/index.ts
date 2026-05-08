@@ -94,7 +94,7 @@ export interface Rejoin extends SoftDeletable {
 }
 
 // ─── Lookups ───
-export type LookupCategory = 'LeadSource' | 'LeadReason';
+export type LookupCategory = 'LeadSource' | 'LeadReason' | (string & {});
 
 export interface LookupValue extends SoftDeletable {
   category: LookupCategory;
@@ -118,11 +118,14 @@ export interface FollowUpDto {
 
 export interface BillDto {
   id: string;
+  leadId: string;
+  leadName: string;
   initialAmount: number;
   amountPaid: number;
   pendingAmount: number;
   medicineBillingAmount: number;
   createdAt: string;
+  isDeleted: boolean;
 }
 
 export interface EnrollmentMedicineItem {
@@ -177,6 +180,8 @@ export interface EnrollmentDto {
 
 export interface RejoinRecordDto {
   id: string;
+  leadId: string;
+  leadName: string;
   packageId: string;
   packageName: string;
   packageCostSnapshot: number;
@@ -185,6 +190,7 @@ export interface RejoinRecordDto {
   endDate: string;
   createdAt: string;
   bill: BillDto | null;
+  isDeleted: boolean;
 }
 
 export interface LeadDetail extends Lead {
@@ -200,6 +206,7 @@ export interface LeadsParams {
   reason?: string | 'All';
   hasEnrollment?: boolean | 'All';
   hasMedicine?: boolean | 'All';
+  isTrash?: boolean;
   pageNumber?: number;
   pageSize?: number;
 }

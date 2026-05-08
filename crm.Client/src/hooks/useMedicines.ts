@@ -57,18 +57,28 @@ export function useMedicineMutations() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: medicinesApi.delete,
-    onSuccess: () => {
+    mutationFn: ({ id, isPermanent }: { id: string; isPermanent?: boolean }) => medicinesApi.delete(id, isPermanent),
+    onSuccess: (_, { isPermanent }) => {
       queryClient.invalidateQueries({ queryKey: MEDICINES_QUERY_KEY });
-      toast.success('Medicine moved to trash');
+      toast.success(isPermanent ? 'Medicine permanently deleted' : 'Medicine moved to trash');
     },
     onError: () => toast.error('Failed to delete medicine'),
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: medicinesApi.restore,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: MEDICINES_QUERY_KEY });
+      toast.success('Medicine restored successfully');
+    },
+    onError: () => toast.error('Failed to restore medicine'),
   });
 
   return {
     createMedicine: createMutation,
     updateMedicine: updateMutation,
     deleteMedicine: deleteMutation,
-    isPending: createMutation.isPending || updateMutation.isPending || deleteMutation.isPending,
+    restoreMedicine: restoreMutation,
+    isPending: createMutation.isPending || updateMutation.isPending || deleteMutation.isPending || restoreMutation.isPending,
   };
 }

@@ -48,7 +48,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 const ALL_WIDGETS = [
   { id: 'packages', label: 'Packages', to: '/packages', icon: Package, color: 'text-blue-500' },
   { id: 'medicines', label: 'Medicines', to: '/medicines', icon: Pill, color: 'text-emerald-500' },
-  { id: 'enrollments', label: 'Enrollments', to: '/enrollments', icon: Receipt, color: 'text-purple-500' },
+  { id: 'enrollments', label: 'Enrollments', to: '/enrollments', icon: CalendarCheck, color: 'text-purple-500' },
+  { id: 'all-bills', label: 'All Bills', to: '/bills', icon: Receipt, color: 'text-indigo-500' },
   { id: 'bill', label: 'Create Bill', to: '/bills/new', icon: Plus, color: 'text-orange-500' },
   { id: 'rejoins', label: 'Rejoins', to: '/rejoins', icon: RefreshCw, color: 'text-pink-500' },
   { id: 'trash', label: 'Trash', to: '/trash', icon: Trash2, color: 'text-slate-500' },
@@ -59,7 +60,13 @@ export default function Dashboard() {
 
   const [enabledWidgets, setEnabledWidgets] = useState<string[]>(() => {
     const saved = localStorage.getItem('dashboard_widgets');
-    return saved ? JSON.parse(saved) : ALL_WIDGETS.map(w => w.id);
+    const defaultIds = ALL_WIDGETS.map(w => w.id);
+    if (!saved) return defaultIds;
+    
+    // Merge saved with new defaults to ensure new features appear
+    const savedIds = JSON.parse(saved);
+    const merged = Array.from(new Set([...savedIds, 'all-bills']));
+    return merged.filter(id => defaultIds.includes(id));
   });
 
   useEffect(() => {

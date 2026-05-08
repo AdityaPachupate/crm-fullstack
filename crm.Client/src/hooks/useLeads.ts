@@ -30,11 +30,22 @@ export function useLeads(params: LeadsParams = {}) {
     hasMedicine: hasMedicineFilter === 'All' ? undefined : hasMedicineFilter,
   };
 
-  return useQuery({
+  const query = useQuery({
     queryKey: [...LEADS_QUERY_KEY, activeParams],
     queryFn: () => leadsApi.getAll(activeParams),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
+
+  return {
+    leads: query.data?.items ?? [],
+    totalCount: query.data?.totalCount ?? 0,
+    totalPages: query.data?.totalPages ?? 0,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error,
+    refetch: query.refetch,
+    data: query.data
+  };
 }
 
 export function useLead(id: string) {
@@ -108,7 +119,7 @@ export function useDeleteLead() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (id: string) => leadsApi.delete(id),
+    mutationFn: ({ id, isPermanent }: { id: string; isPermanent?: boolean }) => leadsApi.delete(id, isPermanent),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: LEADS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
@@ -116,6 +127,22 @@ export function useDeleteLead() {
     },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to delete lead');
+    }
+  });
+}
+
+export function useRestoreLead() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (id: string) => leadsApi.restore(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: LEADS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      toast.success('Lead restored successfully');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to restore lead');
     }
   });
 }

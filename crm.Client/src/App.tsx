@@ -18,6 +18,7 @@ import EnrollmentsList from "@/pages/EnrollmentsList";
 import CreateEnrollment from "@/pages/CreateEnrollment";
 import EnrollmentDetail from "@/pages/EnrollmentDetail";
 import CreateBill from "@/pages/CreateBill";
+import BillsList from "@/pages/BillsList";
 import PackagesCatalog from "@/pages/PackagesCatalog";
 import MedicinesList from "@/pages/MedicinesList";
 import RejoinsList from "@/pages/RejoinsList";
@@ -65,6 +66,7 @@ const App = () => (
               <Route path="/packages" element={<PackagesCatalog />} />
               <Route path="/medicines" element={<MedicinesList />} />
               <Route path="/rejoins" element={<RejoinsList />} />
+              <Route path="/bills" element={<BillsList />} />
             </Route>
             <Route path="/leads/new" element={<LeadForm />} />
             <Route path="/leads/:id" element={<LeadDetail />} />
