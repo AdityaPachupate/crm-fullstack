@@ -18,7 +18,8 @@ import {
   RefreshCw,
   Plus,
   Settings2,
-  X
+  X,
+  Trash2
 } from 'lucide-react';
 import { formatCurrency, isToday, isPast, todayStr, formatDate } from '@/lib/helpers';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
@@ -50,6 +51,7 @@ const ALL_WIDGETS = [
   { id: 'enrollments', label: 'Enrollments', to: '/enrollments', icon: Receipt, color: 'text-purple-500' },
   { id: 'bill', label: 'Create Bill', to: '/bills/new', icon: Plus, color: 'text-orange-500' },
   { id: 'rejoins', label: 'Rejoins', to: '/rejoins', icon: RefreshCw, color: 'text-pink-500' },
+  { id: 'trash', label: 'Trash', to: '/trash', icon: Trash2, color: 'text-slate-500' },
 ];
 
 export default function Dashboard() {
@@ -175,6 +177,59 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
+        
+        {/* Quick Access Section (Moved here) */}
+        <div className="col-span-2 md:col-span-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Quick Access</h3>
+            <Dialog>
+              <DialogTrigger asChild>
+                <button className="text-[10px] font-bold text-primary flex items-center gap-1.5 hover:underline">
+                  <Settings2 className="h-3 w-3" /> Customize
+                </button>
+              </DialogTrigger>
+              <DialogContent className="w-[calc(100%-32px)] max-w-md rounded-2xl p-6 border-none shadow-2xl">
+                <DialogHeader className="text-left">
+                  <DialogTitle className="text-xl font-black tracking-tight">Personalize Home</DialogTitle>
+                  <p className="text-xs text-muted-foreground font-medium">Select shortcuts for your dashboard</p>
+                </DialogHeader>
+                <div className="grid gap-2.5 py-4">
+                  {ALL_WIDGETS.map(w => (
+                    <div key={w.id} className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50/50 border border-slate-100 hover:border-primary/20 transition-all">
+                      <label htmlFor={w.id} className="text-sm font-bold flex items-center gap-4 cursor-pointer flex-1">
+                        <div className="h-9 w-9 rounded-xl bg-white shadow-sm flex items-center justify-center">
+                          <w.icon className={`h-4.5 w-4.5 ${w.color}`} />
+                        </div>
+                        {w.label}
+                      </label>
+                      <Checkbox 
+                        id={w.id} 
+                        checked={enabledWidgets.includes(w.id)} 
+                        onCheckedChange={() => toggleWidget(w.id)}
+                        className="h-5 w-5 rounded-lg border-slate-200"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+          
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+            {ALL_WIDGETS.filter(w => enabledWidgets.includes(w.id)).map(w => (
+              <Link key={w.id} to={w.to}>
+                <Card className="border-none shadow-sm hover:bg-white hover:shadow-md transition-all duration-300 group cursor-pointer active:scale-95">
+                  <CardContent className="p-4 flex flex-col items-center justify-center gap-2.5">
+                    <div className="h-11 w-11 rounded-2xl bg-slate-50 flex items-center justify-center transition-transform group-hover:scale-110 group-hover:rotate-3 shadow-inner">
+                      <w.icon className={`h-5.5 w-5.5 ${w.color}`} />
+                    </div>
+                    <span className="text-[10px] font-black text-center text-slate-600 uppercase tracking-wider">{w.label}</span>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </div>
 
         {/* Lead Status Distribution */}
         <Card className="col-span-2 border-none shadow-sm flex flex-col min-h-[300px]">
@@ -227,59 +282,6 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Widgets Section (Bottom Minimal Grid) */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Quick Access</h3>
-          <Dialog>
-            <DialogTrigger asChild>
-              <button className="text-[10px] font-semibold text-primary flex items-center gap-1 hover:underline">
-                <Settings2 className="h-3 w-3" /> Manage
-              </button>
-            </DialogTrigger>
-            <DialogContent className="w-[calc(100%-32px)] max-w-md rounded-2xl p-6">
-              <DialogHeader className="text-left">
-                <DialogTitle className="text-xl font-bold tracking-tight">Customize Dashboard</DialogTitle>
-                <p className="text-xs text-muted-foreground">Select widgets to show on your home screen</p>
-              </DialogHeader>
-              <div className="grid gap-3 py-4">
-                {ALL_WIDGETS.map(w => (
-                  <div key={w.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30 border border-transparent hover:border-primary/20 transition-colors">
-                    <label htmlFor={w.id} className="text-sm font-semibold flex items-center gap-3 cursor-pointer flex-1">
-                      <div className="h-8 w-8 rounded-lg bg-background flex items-center justify-center">
-                        <w.icon className={`h-4 w-4 ${w.color}`} />
-                      </div>
-                      {w.label}
-                    </label>
-                    <Checkbox 
-                      id={w.id} 
-                      checked={enabledWidgets.includes(w.id)} 
-                      onCheckedChange={() => toggleWidget(w.id)}
-                      className="rounded-md"
-                    />
-                  </div>
-                ))}
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
-        
-        <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-          {ALL_WIDGETS.filter(w => enabledWidgets.includes(w.id)).map(w => (
-            <Link key={w.id} to={w.to}>
-              <Card className="border-none shadow-sm hover:bg-muted/50 transition-colors group">
-                <CardContent className="p-4 flex flex-col items-center justify-center gap-2">
-                  <div className={`h-10 w-10 rounded-full bg-background shadow-inner flex items-center justify-center transition-transform group-hover:scale-110`}>
-                    <w.icon className={`h-5 w-5 ${w.color}`} />
-                  </div>
-                  <span className="text-[10px] font-bold text-center">{w.label}</span>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      </div>
-      
       {isLoading && (
         <div className="fixed bottom-6 right-6 flex items-center gap-2 rounded-full bg-background/80 px-4 py-2 text-xs font-medium shadow-lg backdrop-blur-sm border">
           <Loader2 className="h-3 w-3 animate-spin text-primary" />
