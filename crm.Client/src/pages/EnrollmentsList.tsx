@@ -5,6 +5,16 @@ import { usePackages } from '@/hooks/usePackages';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { formatCurrency } from '@/lib/helpers';
 import { 
   Plus, 
@@ -30,6 +40,7 @@ export default function EnrollmentsList() {
   const [search, setSearch] = useState('');
   const [packageId, setPackageId] = useState('All');
   const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>('All');
+  const [enrollmentToDelete, setEnrollmentToDelete] = useState<string | null>(null);
   
   const { deleteEnrollment } = useEnrollments();
   const { data: packages } = usePackages();
@@ -46,8 +57,13 @@ export default function EnrollmentsList() {
 
   const handleDelete = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (window.confirm('Are you sure you want to delete this enrollment?')) {
-      deleteEnrollment.mutate(id);
+    setEnrollmentToDelete(id);
+  };
+
+  const confirmDelete = () => {
+    if (enrollmentToDelete) {
+      deleteEnrollment.mutate(enrollmentToDelete);
+      setEnrollmentToDelete(null);
     }
   };
 
@@ -235,6 +251,29 @@ export default function EnrollmentsList() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Popup */}
+      <AlertDialog open={!!enrollmentToDelete} onOpenChange={(open) => !open && setEnrollmentToDelete(null)}>
+        <AlertDialogContent className="w-[calc(100%-32px)] max-w-md rounded-2xl p-6">
+          <AlertDialogHeader className="text-left">
+            <AlertDialogTitle className="text-xl font-bold tracking-tight">Delete Enrollment?</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs leading-relaxed font-medium text-slate-500">
+              This action cannot be undone. This will permanently remove the enrollment record and all associated treatment history.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-3 mt-4">
+            <AlertDialogCancel className="flex-1 rounded-xl h-11 text-xs font-bold m-0 border-slate-100 hover:bg-slate-50">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="flex-1 rounded-xl h-11 text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-lg shadow-rose-100 border-none"
+            >
+              {deleteEnrollment.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
