@@ -22,7 +22,8 @@ namespace CRM.API.Features.Enrollments.GetEnrollments
                 [FromQuery] bool? isActive = null,
                 [FromQuery] string? search = null,
                 [FromQuery] Guid? packageId = null,
-                [FromQuery] bool? isPending = null
+                [FromQuery] bool? isPending = null,
+                [FromQuery] string? sortBy = null
             ) =>
             {
                 var result = await mediator.Send(new GetEnrollmentsQuery(
@@ -36,7 +37,8 @@ namespace CRM.API.Features.Enrollments.GetEnrollments
                     isActive,
                     search,
                     packageId,
-                    isPending
+                    isPending,
+                    sortBy
                 ), cancellationToken);
                 return Results.Ok(result);
             })

@@ -18,13 +18,17 @@ namespace CRM.API.Features.Leads.GetLeadsById
 
     public record FollowUpDto(
         Guid Id,
+        Guid LeadId,
+        string LeadName,
+        string LeadPhone,
         DateOnly FollowUpDate,
         string Notes,
         string Source,
         FollowUpPriority Priority,
         FollowUpStatus Status,
         DateTime CreatedAt,
-        DateTime? CompletedAt
+        DateTime? CompletedAt,
+        bool IsOverdue
     );
 
     public record EnrollmentDto(

@@ -52,6 +52,7 @@ export const enrollmentsApi = {
     search?: string;
     packageId?: string;
     isPending?: boolean;
+    sortBy?: string;
   }): Promise<{ items: any[]; totalCount: number }> => {
     const searchParams = new URLSearchParams();
     if (params) {

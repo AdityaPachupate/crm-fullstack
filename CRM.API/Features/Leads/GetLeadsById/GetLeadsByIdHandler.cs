@@ -27,13 +27,17 @@ namespace CRM.API.Features.Leads.GetLeadsById
                     l.UpdatedAt,
                     l.FollowUps.Where(f => !f.IsDeleted).Select(f => new FollowUpDto(
                         f.Id,
+                        f.LeadId,
+                        l.Name,
+                        l.Phone,
                         f.FollowUpDate,
                         f.Notes,
                         f.Source,
                         f.Priority,
                         f.Status,
                         f.CreatedAt,
-                        f.CompletedAt
+                        f.CompletedAt,
+                        f.Status == CRM.API.Common.Enums.FollowUpStatus.Pending && f.FollowUpDate < DateOnly.FromDateTime(DateTime.UtcNow.Date)
                     )).ToList(),
                     l.Enrollments.Select(e => new EnrollmentDto(
                         e.Id,

@@ -57,15 +57,24 @@ public class GetEnrollmentsHandler(AppDbContext db) : IRequestHandler<GetEnrollm
                 : queryable.Where(e => e.Bill == null || e.Bill.PendingAmount <= 0);
         }
 
-        // 2. Count and Setup Projection
+        // 2. Sorting
+        queryable = query.SortBy switch
+        {
+            "date-asc" => queryable.OrderBy(e => e.CreatedAt),
+            "date-desc" => queryable.OrderByDescending(e => e.CreatedAt),
+            "pending-high" => queryable.OrderByDescending(e => e.Bill == null ? 0 : e.Bill.PendingAmount),
+            "pending-low" => queryable.OrderBy(e => e.Bill == null ? 0 : e.Bill.PendingAmount),
+            _ => queryable.OrderByDescending(e => e.CreatedAt)
+        };
+
+        // 3. Count and Setup Projection
         var totalCount = await queryable.CountAsync(cancellationToken);
 
-        // 3. Page and Map
+        // 4. Page and Map
         var dbItems = await queryable
             .Include(e => e.Lead)
             .Include(e => e.Package)
             .Include(e => e.Bill)
-            .OrderByDescending(e => e.CreatedAt)
             .Skip((query.PageNumber - 1) * query.PageSize)
             .Take(query.PageSize)
             .ToListAsync(cancellationToken);

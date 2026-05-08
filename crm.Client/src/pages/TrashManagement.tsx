@@ -32,11 +32,12 @@ import { useRejoins } from '@/hooks/useRejoins';
 import { useMedicines, useMedicineMutations } from '@/hooks/useMedicines';
 import { usePackages, usePackageMutations } from '@/hooks/usePackages';
 import { useLookups, useLookupMutations } from '@/hooks/useLookups';
+import { useFollowUps, useFollowUpsList } from '@/hooks/useFollowUps';
 import { formatCurrency, formatDate } from '@/lib/helpers';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 
-type EntityType = 'leads' | 'enrollments' | 'bills' | 'rejoins' | 'medicines' | 'packages' | 'lookups';
+type EntityType = 'leads' | 'enrollments' | 'bills' | 'rejoins' | 'followups' | 'medicines' | 'packages' | 'lookups';
 
 export default function TrashManagement() {
   const navigate = useNavigate();
@@ -49,6 +50,7 @@ export default function TrashManagement() {
   const { data: enrollmentsData, isLoading: enrollmentsLoading } = useAllEnrollments({ isTrash: true });
   const { data: billsData, isLoading: billsLoading } = useBills(undefined, true);
   const { data: rejoinsData, isLoading: rejoinsLoading } = useRejoins({ isTrash: true });
+  const { data: followupsData, isLoading: followupsLoading } = useFollowUpsList({ isTrash: true });
   const { data: medicines, isLoading: medicinesLoading } = useMedicines(true);
   const { data: packages, isLoading: packagesLoading } = usePackages(true);
   const { data: lookups, isLoading: lookupsLoading } = useLookups(true);
@@ -60,6 +62,7 @@ export default function TrashManagement() {
   const restoreBillMut = useRestoreBill();
   const deleteBillMut = useDeleteBill();
   const { restoreRejoin, deleteRejoin } = useRejoins();
+  const { restoreFollowUp, permanentDeleteFollowUp } = useFollowUps();
   const { restoreMedicine, deleteMedicine } = useMedicineMutations();
   const { restorePackage, deletePackage } = usePackageMutations();
   const { restoreLookup, deleteLookup } = useLookupMutations(true);
@@ -76,6 +79,7 @@ export default function TrashManagement() {
       case 'enrollments': restoreEnrollment.mutate(id); break;
       case 'bills': restoreBillMut.mutate(id); break;
       case 'rejoins': restoreRejoin.mutate(id); break;
+      case 'followups': restoreFollowUp.mutate(id); break;
       case 'medicines': restoreMedicine.mutate(id); break;
       case 'packages': restorePackage.mutate(id); break;
       case 'lookups': restoreLookup(id); break;
@@ -90,6 +94,7 @@ export default function TrashManagement() {
       case 'enrollments': deleteEnrollment.mutate({ id, isPermanent: true }); break;
       case 'bills': deleteBillMut.mutate({ billId: id, isPermanent: true }); break;
       case 'rejoins': deleteRejoin.mutate({ id, isPermanent: true }); break;
+      case 'followups': permanentDeleteFollowUp.mutate(id); break;
       case 'medicines': deleteMedicine.mutate({ id, isPermanent: true }); break;
       case 'packages': deletePackage.mutate({ id, isPermanent: true }); break;
       case 'lookups': deleteLookup({ id, isPermanent: true }); break;
@@ -102,6 +107,7 @@ export default function TrashManagement() {
     enrollments: { label: 'Enrollments', icon: Calendar, items: enrollmentsData?.items || [], loading: enrollmentsLoading, nameKey: 'leadName', subKey: 'packageName' },
     bills: { label: 'Bills', icon: Receipt, items: billsData?.items || [], loading: billsLoading, nameKey: 'leadName' },
     rejoins: { label: 'Rejoins', icon: RefreshCw, items: rejoinsData?.items || [], loading: rejoinsLoading, nameKey: 'leadName', subKey: 'packageName' },
+    followups: { label: 'Follow-ups', icon: Calendar, items: followupsData || [], loading: followupsLoading, nameKey: 'leadName', subKey: 'priority' },
     medicines: { label: 'Medicines', icon: Pill, items: medicines || [], loading: medicinesLoading, nameKey: 'name' },
     packages: { label: 'Packages', icon: PackageIcon, items: packages || [], loading: packagesLoading, nameKey: 'name' },
     lookups: { label: 'Lookups', icon: Search, items: (lookups || []).filter(l => l.deletedAt), loading: lookupsLoading, nameKey: 'displayName', subKey: 'category' },

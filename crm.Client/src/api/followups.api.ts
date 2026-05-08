@@ -35,6 +35,24 @@ export const followupsApi = {
     return apiClient<FollowUpDto[]>('/api/followups/today');
   },
 
+  getAll: async (params?: { 
+    status?: string; 
+    startDate?: string; 
+    endDate?: string; 
+    leadId?: string;
+    isTrash?: boolean;
+  }): Promise<FollowUpDto[]> => {
+    const searchParams = new URLSearchParams();
+    if (params?.status) searchParams.append('status', params.status);
+    if (params?.startDate) searchParams.append('startDate', params.startDate);
+    if (params?.endDate) searchParams.append('endDate', params.endDate);
+    if (params?.leadId) searchParams.append('leadId', params.leadId);
+    if (params?.isTrash) searchParams.append('isTrash', 'true');
+    
+    const query = searchParams.toString();
+    return apiClient<FollowUpDto[]>(`/api/followups${query ? `?${query}` : ''}`);
+  },
+
   create: async (request: CreateFollowUpRequest): Promise<FollowUpDto> => {
     return apiClient<FollowUpDto>('/api/followups', {
       method: 'POST',
@@ -57,7 +75,11 @@ export const followupsApi = {
     });
   },
 
-  delete: async (id: string): Promise<void> => {
-    return apiClient<void>(`/api/followups/${id}`, { method: 'DELETE' });
+  restore: async (id: string): Promise<void> => {
+    return apiClient<void>(`/api/followups/${id}/restore`, { method: 'POST' });
+  },
+
+  delete: async (id: string, isPermanent: boolean = false): Promise<void> => {
+    return apiClient<void>(`/api/followups/${id}${isPermanent ? '?isPermanent=true' : ''}`, { method: 'DELETE' });
   }
 };

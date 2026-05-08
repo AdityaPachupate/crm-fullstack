@@ -12,6 +12,19 @@ export function useFollowUpsToday() {
   });
 }
 
+export function useFollowUpsList(params?: { 
+  status?: string; 
+  startDate?: string; 
+  endDate?: string; 
+  leadId?: string;
+  isTrash?: boolean;
+}) {
+  return useQuery({
+    queryKey: [...FOLLOWUPS_QUERY_KEY, 'list', params],
+    queryFn: () => followupsApi.getAll(params),
+  });
+}
+
 export function useFollowUps() {
   const queryClient = useQueryClient();
 
@@ -35,18 +48,46 @@ export function useFollowUps() {
       queryClient.invalidateQueries({ queryKey: LEADS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: FOLLOWUPS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-      toast.success('Follow-up deleted');
+      toast.success('Follow-up moved to trash');
     },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to delete follow-up');
     }
   });
 
+  const restoreMutation = useMutation({
+    mutationFn: (id: string) => followupsApi.restore(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: LEADS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: FOLLOWUPS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      toast.success('Follow-up restored');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to restore follow-up');
+    }
+  });
+
+  const permanentDeleteMutation = useMutation({
+    mutationFn: (id: string) => followupsApi.delete(id, true),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: FOLLOWUPS_QUERY_KEY });
+      toast.success('Follow-up permanently deleted');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to permanently delete follow-up');
+    }
+  });
+
   return {
     completeFollowUp: completeMutation,
     deleteFollowUp: deleteMutation,
+    restoreFollowUp: restoreMutation,
+    permanentDeleteFollowUp: permanentDeleteMutation,
     isCompleting: completeMutation.isPending,
-    isDeleting: deleteMutation.isPending
+    isDeleting: deleteMutation.isPending,
+    isRestoring: restoreMutation.isPending,
+    isPermanentlyDeleting: permanentDeleteMutation.isPending
   };
 }
 

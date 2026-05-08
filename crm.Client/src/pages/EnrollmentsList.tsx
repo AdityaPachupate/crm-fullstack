@@ -30,9 +30,23 @@ import {
   Trash2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetFooter,
+  SheetClose,
+} from "@/components/ui/sheet";
+import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { Filter, ArrowUpDown, AlertCircle, X } from 'lucide-react';
 
 type EnrollmentFilter = 'All' | 'Active' | 'Expired';
 type PaymentFilter = 'All' | 'Paid' | 'Pending';
+type SortType = 'date-desc' | 'date-asc' | 'pending-high' | 'pending-low';
 
 export default function EnrollmentsList() {
   const navigate = useNavigate();
@@ -40,6 +54,8 @@ export default function EnrollmentsList() {
   const [search, setSearch] = useState('');
   const [packageId, setPackageId] = useState('All');
   const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>('All');
+  const [sortBy, setSortBy] = useState<SortType>('date-desc');
+  const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
   const [enrollmentToDelete, setEnrollmentToDelete] = useState<string | null>(null);
   
   const { deleteEnrollment } = useEnrollments();
@@ -50,6 +66,7 @@ export default function EnrollmentsList() {
     search: search || undefined,
     packageId: packageId === 'All' ? undefined : packageId,
     isPending: paymentFilter === 'All' ? undefined : paymentFilter === 'Pending',
+    sortBy: sortBy,
     pageSize: 50 
   });
 
@@ -94,16 +111,129 @@ export default function EnrollmentsList() {
           </Button>
         </div>
 
-        {/* Search & Main Filter */}
+        {/* Search & Filter Bar */}
         <div className="space-y-4">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <Input 
-              placeholder="Search patient name or phone..." 
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-11 h-12 bg-slate-50 border-none rounded-xl text-sm font-medium focus-visible:ring-indigo-500"
-            />
+          <div className="flex gap-2">
+            <div className="relative flex-1 group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+              <Input 
+                placeholder="Search patient name or phone..." 
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-11 h-12 bg-slate-50 border-none rounded-xl text-sm font-medium focus-visible:ring-indigo-500"
+              />
+            </div>
+
+            <Sheet open={isFilterSheetOpen} onOpenChange={setIsFilterSheetOpen}>
+              <SheetTrigger asChild>
+                <Button 
+                  variant="secondary" 
+                  className={cn(
+                    "h-12 w-12 p-0 rounded-xl bg-slate-50 border-none text-slate-500 hover:text-indigo-600 active:scale-95 transition-all",
+                    (paymentFilter !== 'All' || packageId !== 'All' || sortBy !== 'date-desc') && "text-indigo-600 bg-indigo-50"
+                  )}
+                >
+                  <Filter className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="bottom" className="rounded-t-[2.5rem] p-8 border-none h-[75vh]">
+                <SheetHeader>
+                  <SheetTitle className="text-2xl font-black text-slate-900 uppercase tracking-tight">Sort & Filter</SheetTitle>
+                  <SheetDescription className="text-slate-400 font-medium">Refine your enrollment list</SheetDescription>
+                </SheetHeader>
+
+                <div className="mt-8 space-y-8 no-scrollbar overflow-y-auto pb-24">
+                  {/* Sorting */}
+                  <div className="space-y-4">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Sort By</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { id: 'date-desc', label: 'Newest First', icon: ArrowUpDown },
+                        { id: 'date-asc', label: 'Oldest First', icon: ArrowUpDown },
+                        { id: 'pending-high', label: 'Due: High to Low', icon: AlertCircle },
+                        { id: 'pending-low', label: 'Due: Low to High', icon: AlertCircle },
+                      ].map((s) => (
+                        <Button
+                          key={s.id}
+                          variant={sortBy === s.id ? 'default' : 'secondary'}
+                          className={cn(
+                            "h-14 rounded-2xl font-bold transition-all text-xs justify-start px-4 gap-2",
+                            sortBy === s.id ? "bg-indigo-600 text-white shadow-lg shadow-indigo-100" : "bg-slate-50 text-slate-600 hover:bg-slate-100"
+                          )}
+                          onClick={() => setSortBy(s.id as SortType)}
+                        >
+                          <s.icon className="h-4 w-4" />
+                          {s.label}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Payment Filtering */}
+                  <div className="space-y-4">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Payment Status</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { id: 'All', label: 'All Payments' },
+                        { id: 'Paid', label: 'Fully Paid' },
+                        { id: 'Pending', label: 'Pending Dues' },
+                      ].map((p) => (
+                        <Button
+                          key={p.id}
+                          variant={paymentFilter === p.id ? 'default' : 'secondary'}
+                          className={cn(
+                            "h-12 px-6 rounded-2xl font-bold transition-all text-xs",
+                            paymentFilter === p.id ? "bg-indigo-600 text-white shadow-lg shadow-indigo-100" : "bg-slate-50 text-slate-600 hover:bg-slate-100"
+                          )}
+                          onClick={() => setPaymentFilter(p.id as PaymentFilter)}
+                        >
+                          {p.label}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Package Filtering */}
+                  <div className="space-y-4">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Package</Label>
+                    <Select value={packageId} onValueChange={setPackageId}>
+                      <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border-none px-4 font-bold text-slate-600">
+                        <div className="flex items-center gap-2">
+                          <Package className="h-4 w-4 text-slate-400" />
+                          <SelectValue placeholder="All Packages" />
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent className="rounded-2xl border-slate-100">
+                        <SelectItem value="All" className="font-bold">All Packages</SelectItem>
+                        {packages?.map(p => (
+                          <SelectItem key={p.id} value={p.id} className="font-bold">{p.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <SheetFooter className="absolute bottom-8 left-8 right-8 flex-row gap-3">
+                  <Button 
+                    variant="ghost" 
+                    className="flex-1 h-14 rounded-2xl font-bold text-slate-400"
+                    onClick={() => {
+                      setSortBy('date-desc');
+                      setPaymentFilter('All');
+                      setPackageId('All');
+                      setIsFilterSheetOpen(false);
+                    }}
+                  >
+                    Reset
+                  </Button>
+                  <SheetClose asChild>
+                    <Button className="flex-[2] h-14 rounded-2xl bg-indigo-600 font-bold text-white shadow-lg shadow-indigo-100">
+                      Show Results
+                    </Button>
+                  </SheetClose>
+                </SheetFooter>
+              </SheetContent>
+            </Sheet>
           </div>
 
           <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
@@ -123,36 +253,30 @@ export default function EnrollmentsList() {
             ))}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <Select value={packageId} onValueChange={setPackageId}>
-              <SelectTrigger className="h-10 rounded-xl bg-slate-50 border-none text-xs font-bold text-slate-600">
-                <div className="flex items-center gap-2">
-                  <Package className="h-3.5 w-3.5 text-slate-400" />
-                  <SelectValue placeholder="All Packages" />
-                </div>
-              </SelectTrigger>
-              <SelectContent className="rounded-xl border-slate-100">
-                <SelectItem value="All" className="text-xs font-bold">All Packages</SelectItem>
-                {packages?.map(p => (
-                  <SelectItem key={p.id} value={p.id} className="text-xs font-bold">{p.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={paymentFilter} onValueChange={(v: PaymentFilter) => setPaymentFilter(v)}>
-              <SelectTrigger className="h-10 rounded-xl bg-slate-50 border-none text-xs font-bold text-slate-600">
-                <div className="flex items-center gap-2">
-                  <Wallet className="h-3.5 w-3.5 text-slate-400" />
-                  <SelectValue placeholder="Payment Status" />
-                </div>
-              </SelectTrigger>
-              <SelectContent className="rounded-xl border-slate-100">
-                <SelectItem value="All" className="text-xs font-bold">All Payments</SelectItem>
-                <SelectItem value="Paid" className="text-xs font-bold text-emerald-600">Fully Paid</SelectItem>
-                <SelectItem value="Pending" className="text-xs font-bold text-rose-600">Pending Dues</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Active Filters Display */}
+          {(paymentFilter !== 'All' || packageId !== 'All' || sortBy !== 'date-desc') && (
+            <div className="flex flex-wrap gap-2 items-center pt-2">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-1">Active:</span>
+              {paymentFilter !== 'All' && (
+                <Badge variant="secondary" className="bg-rose-50 text-rose-600 border-none rounded-lg px-2 py-1 flex items-center gap-1 font-bold text-[10px]">
+                  {paymentFilter === 'Paid' ? 'Fully Paid' : 'Pending Dues'}
+                  <X className="h-3 w-3 cursor-pointer" onClick={() => setPaymentFilter('All')} />
+                </Badge>
+              )}
+              {packageId !== 'All' && (
+                <Badge variant="secondary" className="bg-indigo-50 text-indigo-600 border-none rounded-lg px-2 py-1 flex items-center gap-1 font-bold text-[10px]">
+                  Pkg: {packages?.find(p => p.id === packageId)?.name || 'Selected'}
+                  <X className="h-3 w-3 cursor-pointer" onClick={() => setPackageId('All')} />
+                </Badge>
+              )}
+              {sortBy !== 'date-desc' && (
+                <Badge variant="secondary" className="bg-amber-50 text-amber-600 border-none rounded-lg px-2 py-1 flex items-center gap-1 font-bold text-[10px]">
+                  {sortBy === 'date-asc' ? 'Oldest First' : sortBy === 'pending-high' ? 'Due High to Low' : 'Due Low to High'}
+                  <X className="h-3 w-3 cursor-pointer" onClick={() => setSortBy('date-desc')} />
+                </Badge>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

@@ -14,6 +14,7 @@ namespace CRM.API.Features.Enrollments.GetEnrollments
         bool? IsActive = null,
         string? Search = null,
         Guid? PackageId = null,
-        bool? IsPending = null
+        bool? IsPending = null,
+        string? SortBy = null
     ) : IRequest<PagedResult<GetEnrollmentsResponse>>;
 }
