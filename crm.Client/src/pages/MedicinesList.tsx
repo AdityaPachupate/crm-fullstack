@@ -29,7 +29,6 @@ import {
   Edit2, 
   Trash2, 
   MoreVertical,
-  ChevronRight,
   ArrowLeft,
   Loader2,
   Package
@@ -204,7 +203,6 @@ export default function MedicinesList() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-indigo-400 group-hover:translate-x-0.5 transition-all" />
               </div>
             </div>
           ))
