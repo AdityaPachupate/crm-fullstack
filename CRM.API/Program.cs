@@ -54,10 +54,15 @@ builder.Services.AddCors(options =>
 });
 
 // Add services to the container.
-var connectionString = builder.Configuration.GetConnectionString("NeonProductionDb")
+var connectionString = (builder.Configuration.GetConnectionString("NeonProductionDb")
                       ?? Environment.GetEnvironmentVariable("ConnectionStrings__NeonProductionDb")
                       ?? Environment.GetEnvironmentVariable("DATABASE_URL")
-                      ?? Environment.GetEnvironmentVariable("NEON_URL");
+                      ?? Environment.GetEnvironmentVariable("NEON_URL"))?.Trim();
+
+if (!string.IsNullOrEmpty(connectionString) && connectionString.StartsWith("\"") && connectionString.EndsWith("\""))
+{
+    connectionString = connectionString.Substring(1, connectionString.Length - 2).Trim();
+}
 
 if (string.IsNullOrEmpty(connectionString))
 {
