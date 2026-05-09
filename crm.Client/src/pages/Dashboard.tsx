@@ -19,8 +19,10 @@ import {
   Plus,
   Settings2,
   X,
-  Trash2
+  Trash2,
+  LogOut
 } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 import { formatCurrency, isToday, isPast, todayStr, formatDate } from '@/lib/helpers';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { 
@@ -44,6 +46,7 @@ import {
   DialogTrigger 
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
 
 const ALL_WIDGETS = [
   { id: 'packages', label: 'Packages', to: '/packages', icon: Package, color: 'text-blue-500' },
@@ -56,6 +59,7 @@ const ALL_WIDGETS = [
 ];
 
 export default function Dashboard() {
+  const { logout } = useAuth();
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
 
   const [enabledWidgets, setEnabledWidgets] = useState<string[]>(() => {
@@ -116,9 +120,22 @@ export default function Dashboard() {
            }} 
       />
       
-      <div className="rounded-2xl bg-primary px-8 py-8 text-primary-foreground shadow-sm">
-        <h1 className="text-3xl font-bold tracking-tight">{greeting}, Admin!</h1>
-        <p className="mt-2 text-primary-foreground/80 font-medium">Today is {currentDate}.</p>
+      <div className="rounded-2xl bg-primary px-8 py-8 text-primary-foreground shadow-sm relative overflow-hidden">
+        <div className="flex justify-between items-start relative z-10">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">{greeting}, Admin!</h1>
+            <p className="mt-2 text-primary-foreground/80 font-medium">Today is {currentDate}.</p>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={logout} 
+            className="text-primary-foreground hover:bg-white/20 transition-colors h-10 w-10 rounded-xl"
+            title="Logout"
+          >
+            <LogOut className="h-6 w-6" />
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 auto-rows-min">

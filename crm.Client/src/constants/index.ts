@@ -20,5 +20,5 @@ export const LOOKUP_CATEGORIES = {
 export const APP_CONFIG = {
   STORAGE_KEY: 'clinic_crm_data',
   QUICK_STATUS_STORAGE_KEY: 'leads_quick_status_buttons_v1',
-  DEFAULT_PAGE_SIZE: 100,
+  DEFAULT_PAGE_SIZE: 10000,
 };

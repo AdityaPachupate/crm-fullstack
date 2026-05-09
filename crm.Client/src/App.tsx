@@ -28,6 +28,9 @@ import LookupsAdmin from "@/pages/LookupsAdmin";
 import TrashManagement from "@/pages/TrashManagement";
 import MoreMenu from "@/pages/MoreMenu";
 import NotFound from "@/pages/NotFound";
+import Login from "@/pages/Login";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 /**
  * We set a high gcTime (formerly cacheTime) to ensure that the persistent 
@@ -44,6 +47,12 @@ const queryClient = new QueryClient({
 
 const persister = createIndexedDBPersister();
 
+const ConditionalBottomNav = () => {
+  const { isLoggedIn } = useAuth();
+  if (!isLoggedIn) return null;
+  return <BottomNav />;
+};
+
 const App = () => (
   <PersistQueryClientProvider 
     client={queryClient} 
@@ -57,31 +66,38 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            <Route element={<AppShell />}>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/leads" element={<LeadsList />} />
-              <Route path="/follow-ups" element={<FollowUpsList />} />
-              <Route path="/more" element={<MoreMenu />} />
-              <Route path="/enrollments" element={<EnrollmentsList />} />
-              <Route path="/packages" element={<PackagesCatalog />} />
-              <Route path="/medicines" element={<MedicinesList />} />
-              <Route path="/rejoins" element={<RejoinsList />} />
-              <Route path="/bills" element={<BillsList />} />
-            </Route>
-            <Route path="/leads/new" element={<LeadForm />} />
-            <Route path="/leads/:id" element={<LeadDetail />} />
-            <Route path="/leads/:id/edit" element={<LeadEdit />} />
-            <Route path="/follow-ups/new/:leadId" element={<ScheduleFollowUp />} />
-            <Route path="/enrollments/new" element={<CreateEnrollment />} />
-            <Route path="/enrollments/:id" element={<EnrollmentDetail />} />
-            <Route path="/bills/new" element={<CreateBill />} />
-            <Route path="/rejoins/new" element={<CreateRejoin />} />
-            <Route path="/settings/lookups" element={<LookupsAdmin />} />
-            <Route path="/trash" element={<TrashManagement />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          <BottomNav />
+          <AuthProvider>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              
+              <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/leads" element={<LeadsList />} />
+                <Route path="/follow-ups" element={<FollowUpsList />} />
+                <Route path="/more" element={<MoreMenu />} />
+                <Route path="/enrollments" element={<EnrollmentsList />} />
+                <Route path="/packages" element={<PackagesCatalog />} />
+                <Route path="/medicines" element={<MedicinesList />} />
+                <Route path="/rejoins" element={<RejoinsList />} />
+                <Route path="/bills" element={<BillsList />} />
+              </Route>
+
+              {/* Other routes also need protection */}
+              <Route path="/leads/new" element={<ProtectedRoute><LeadForm /></ProtectedRoute>} />
+              <Route path="/leads/:id" element={<ProtectedRoute><LeadDetail /></ProtectedRoute>} />
+              <Route path="/leads/:id/edit" element={<ProtectedRoute><LeadEdit /></ProtectedRoute>} />
+              <Route path="/follow-ups/new/:leadId" element={<ProtectedRoute><ScheduleFollowUp /></ProtectedRoute>} />
+              <Route path="/enrollments/new" element={<ProtectedRoute><CreateEnrollment /></ProtectedRoute>} />
+              <Route path="/enrollments/:id" element={<ProtectedRoute><EnrollmentDetail /></ProtectedRoute>} />
+              <Route path="/bills/new" element={<ProtectedRoute><CreateBill /></ProtectedRoute>} />
+              <Route path="/rejoins/new" element={<ProtectedRoute><CreateRejoin /></ProtectedRoute>} />
+              <Route path="/settings/lookups" element={<ProtectedRoute><LookupsAdmin /></ProtectedRoute>} />
+              <Route path="/trash" element={<ProtectedRoute><TrashManagement /></ProtectedRoute>} />
+              
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            <ConditionalBottomNav />
+          </AuthProvider>
         </BrowserRouter>
       </CRMProvider>
     </TooltipProvider>

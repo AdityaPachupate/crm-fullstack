@@ -12,7 +12,7 @@ namespace CRM.API.Features.Leads.GetLeads
         string? Reason,
         bool IsTrash = false, 
         int PageNumber = 1, 
-        int PageSize = 50,
+        int PageSize = 10000,
         bool? HasEnrollment = null,
         bool? HasMedicine = null
     ) : IRequest<PagedResult<GetLeadsResponse>>

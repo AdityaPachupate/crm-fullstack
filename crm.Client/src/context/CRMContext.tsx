@@ -114,7 +114,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
 
     const syncLeads = async () => {
       try {
-        const res = await fetch(LEADS_API_URL);
+        const res = await fetch(`${LEADS_API_URL}?pageSize=10000`);
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const data = await res.json();
         if (isMounted && data && data.items) {
@@ -174,7 +174,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
       const query = new URLSearchParams();
       if (params?.status) query.set('status', params.status);
       if (params?.search) query.set('search', params.search);
-      query.set('pageSize', '100');
+      query.set('pageSize', '10000');
 
       const res = await fetch(`${LEADS_API_URL}?${query.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch leads');

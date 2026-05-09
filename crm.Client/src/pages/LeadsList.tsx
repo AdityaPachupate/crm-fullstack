@@ -35,7 +35,7 @@ import { getAllStaticCodes } from '@/lib/lookup-registry';
 export default function LeadsList() {
   const navigate = useNavigate();
   const { search, setSearch, statusFilter, setStatusFilter } = useLeadsStore();
-  const { data, isLoading: loading, isFetching, error } = useLeads({ status: statusFilter, search, pageSize: 100 });
+  const { data, isLoading: loading, isFetching, error } = useLeads({ status: statusFilter, search, pageSize: 10000 });
   const { prefetchLead } = usePrefetch();
   const deleteMutation = useDeleteLead();
   const bulkImportMutation = useBulkImportLeads();

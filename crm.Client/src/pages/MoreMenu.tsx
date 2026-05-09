@@ -13,6 +13,7 @@ const items = [
 ];
 
 export default function MoreMenu() {
+  const { logout } = useAuth();
   return (
     <div>
       <div className="border-b bg-card/95 backdrop-blur-sm px-5 py-4">
@@ -33,7 +34,26 @@ export default function MoreMenu() {
             </div>
           </Link>
         ))}
+        
+        <button 
+          onClick={logout} 
+          className="w-full block text-left"
+        >
+          <div className="flex items-center gap-3 px-5 py-3.5 hover:bg-destructive/10 transition-colors">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-destructive/10">
+              <LogOut className="h-4 w-4 text-destructive" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-destructive">Logout</p>
+              <p className="text-xs text-muted-foreground">Sign out of your account</p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </div>
+        </button>
       </div>
     </div>
   );
 }
+
+import { LogOut } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
