@@ -9,8 +9,8 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 const HARDCODED_USER = {
-  username: import.meta.env.VITE_AUTH_USERNAME || 'admin',
-  password: import.meta.env.VITE_AUTH_PASSWORD || 'Parasnath@2026!Secure'
+  username: import.meta.env.VITE_AUTH_USERNAME,
+  password: import.meta.env.VITE_AUTH_PASSWORD
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -36,6 +36,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoggedIn(false);
     localStorage.removeItem('isLoggedIn');
     sessionStorage.removeItem('isLoggedIn');
+    // Clear CRM data to ensure fresh sync on next login
+    localStorage.removeItem('clinic_crm_data');
+    localStorage.removeItem('leads_quick_status_buttons_v1');
   };
 
   return (
