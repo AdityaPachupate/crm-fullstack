@@ -21,6 +21,8 @@ namespace CRM.API.Infrastructure.Persistence.Configurations
             builder.Property(l => l.Status).HasConversion<string>();
             builder.Property(l => l.CreatedAt).HasDefaultValueSql("now()");
             builder.HasIndex(l => l.Phone).IsUnique();
+            builder.HasIndex(l => l.CreatedAt);
+            builder.HasIndex(l => l.Status);
             builder.HasQueryFilter(l => !l.IsDeleted);
 
         }

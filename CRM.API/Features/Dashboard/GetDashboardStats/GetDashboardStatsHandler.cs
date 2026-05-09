@@ -42,12 +42,11 @@ public class GetDashboardStatsHandler(AppDbContext db) : IRequestHandler<GetDash
         string enrollmentsTrend = $"{activeEnrollments} active";
 
         // 3. Today's Tasks & Overdue
-        var followUps = await db.FollowUps
-            .Where(f => !f.IsDeleted && f.Status == FollowUpStatus.Pending)
-            .ToListAsync(cancellationToken);
-
-        var todayTasks = followUps.Count(f => f.FollowUpDate == today);
-        var overdueTasks = followUps.Count(f => f.FollowUpDate < today);
+        var todayTasks = await db.FollowUps
+            .CountAsync(f => !f.IsDeleted && f.Status == FollowUpStatus.Pending && f.FollowUpDate == today, cancellationToken);
+        
+        var overdueTasks = await db.FollowUps
+            .CountAsync(f => !f.IsDeleted && f.Status == FollowUpStatus.Pending && f.FollowUpDate < today, cancellationToken);
         
         string tasksTrend = $"{overdueTasks} overdue";
 

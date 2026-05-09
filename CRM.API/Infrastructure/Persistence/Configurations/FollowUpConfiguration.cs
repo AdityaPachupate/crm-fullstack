@@ -18,6 +18,8 @@ namespace CRM.API.Infrastructure.Persistence.Configurations
             builder.Property(x => x.Status)
                 .HasConversion<string>();
 
+            builder.HasIndex(f => f.FollowUpDate);
+            builder.HasIndex(f => f.Status);
             builder.HasQueryFilter(f => !f.IsDeleted);
         }
     }

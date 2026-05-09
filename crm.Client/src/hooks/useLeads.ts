@@ -41,6 +41,7 @@ export function useLeads(params: LeadsParams = {}) {
     totalCount: query.data?.totalCount ?? 0,
     totalPages: query.data?.totalPages ?? 0,
     isLoading: query.isLoading,
+    isFetching: query.isFetching,
     isError: query.isError,
     error: query.error,
     refetch: query.refetch,

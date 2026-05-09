@@ -169,6 +169,7 @@ app.UseAuthorization();
 app.MapHealthChecks("/api/health/live", new HealthCheckOptions { Predicate = _ => false });
 app.MapHealthChecks("/api/health/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") });
 app.MapHealthChecks("/api/health", new HealthCheckOptions { ResponseWriter = HealthCheckExtensions.WriteResponse });
+app.MapGet("/api/ping", () => Results.Ok(new { status = "Healthy", timestamp = DateTime.UtcNow }));
 
 app.MapControllers();
 app.MapEndpoints(typeof(Program).Assembly);

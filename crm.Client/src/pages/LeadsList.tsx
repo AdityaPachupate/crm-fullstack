@@ -248,11 +248,20 @@ export default function LeadsList() {
       </div>
 
       {/* List */}
-      <div className="space-y-3 px-3 py-4">
-        {loading ? (
+      <div className="relative space-y-3 px-3 py-4">
+        {isFetching && leads.length > 0 && (
+           <div className="sticky top-40 z-50 flex justify-center pointer-events-none">
+             <div className="bg-primary/90 text-primary-foreground text-[10px] font-bold px-3 py-1 rounded-full shadow-lg flex items-center gap-2 backdrop-blur-sm animate-in fade-in slide-in-from-top-2">
+               <div className="w-2 h-2 rounded-full border-2 border-white border-t-transparent animate-spin" />
+               REFRESHING...
+             </div>
+           </div>
+        )}
+
+        {loading && leads.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
              <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-             <p className="text-sm text-muted-foreground">Loading patients...</p>
+             <p className="text-sm text-muted-foreground font-medium">Connecting to server...</p>
           </div>
         ) : error ? (
           <p className="py-16 text-center text-sm text-destructive">{(error as Error).message}</p>
