@@ -9,13 +9,9 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 const HARDCODED_USER = {
-  username: import.meta.env.VITE_AUTH_USERNAME || 'admin',
-  password: import.meta.env.VITE_AUTH_PASSWORD || 'Parasnath@2026!Secure'
+  username: import.meta.env.VITE_AUTH_USERNAME,
+  password: import.meta.env.VITE_AUTH_PASSWORD
 };
-
-if (!import.meta.env.VITE_AUTH_USERNAME) {
-  console.warn('Auth: VITE_AUTH_USERNAME not found in environment variables. Using default "admin".');
-}
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
