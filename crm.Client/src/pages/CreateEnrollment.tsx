@@ -37,8 +37,8 @@ export default function CreateEnrollment() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const activeLeads = leadsData?.items || [];
-  const activePackages = packages || [];
-  const activeMedicines = medicines?.filter(m => m.isActive) || [];
+  const activePackages = useMemo(() => packages || [], [packages]);
+  const activeMedicines = useMemo(() => medicines?.filter(m => m.isActive) || [], [medicines]);
 
   const selectedPkg = useMemo(() => 
     activePackages.find(p => p.id === packageId), 

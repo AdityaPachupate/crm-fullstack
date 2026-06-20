@@ -74,9 +74,9 @@ export default function LeadDetail() {
     () => (lead?.followUps ?? []).slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
     [lead]
   );
-  const leadEnrollments = lead?.enrollments ?? [];
-  const activeEnrollments = leadEnrollments.filter(e => !e.isDeleted);
-  const leadRejoins = lead?.rejoinRecords ?? [];
+  const leadEnrollments = useMemo(() => lead?.enrollments ?? [], [lead]);
+  const activeEnrollments = useMemo(() => leadEnrollments.filter(e => !e.isDeleted), [leadEnrollments]);
+  const leadRejoins = useMemo(() => lead?.rejoinRecords ?? [], [lead]);
 
   const leadBills = useMemo(
     () => billsData || [],
