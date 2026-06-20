@@ -16,7 +16,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (username: string, password: string, rememberMe: boolean = false) => {
     try {
-      const baseUrl = (import.meta.env.VITE_API_BASE_URL || 'https://crm-api-1ugj.onrender.com').replace(/\/$/, '');
+      const baseUrl = (import.meta.env.VITE_API_BASE_URL || 'https://crm-api-vy8f.onrender.com').replace(/\/$/, '');
       const response = await fetch(`${baseUrl}/api/auth/login`, {
         method: 'POST',
         headers: {
