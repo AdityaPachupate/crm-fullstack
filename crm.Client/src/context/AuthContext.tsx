@@ -2,16 +2,11 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 interface AuthContextType {
   isLoggedIn: boolean;
-  login: (username: string, password: string, rememberMe?: boolean) => boolean;
+  login: (username: string, password: string, rememberMe?: boolean) => Promise<boolean>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
-
-const HARDCODED_USER = {
-  username: import.meta.env.VITE_AUTH_USERNAME,
-  password: import.meta.env.VITE_AUTH_PASSWORD
-};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
@@ -19,23 +14,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
            sessionStorage.getItem('isLoggedIn') === 'true';
   });
 
-  const login = (username: string, password: string, rememberMe: boolean = false) => {
-    if (username === HARDCODED_USER.username && password === HARDCODED_USER.password) {
-      setIsLoggedIn(true);
-      if (rememberMe) {
-        localStorage.setItem('isLoggedIn', 'true');
-      } else {
-        sessionStorage.setItem('isLoggedIn', 'true');
+  const login = async (username: string, password: string, rememberMe: boolean = false) => {
+    try {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+      const response = await fetch(`${baseUrl}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setIsLoggedIn(true);
+        if (rememberMe) {
+          localStorage.setItem('isLoggedIn', 'true');
+          localStorage.setItem('authToken', data.token);
+        } else {
+          sessionStorage.setItem('isLoggedIn', 'true');
+          sessionStorage.setItem('authToken', data.token);
+        }
+        return true;
       }
-      return true;
+      return false;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
     }
-    return false;
   };
 
   const logout = () => {
     setIsLoggedIn(false);
     localStorage.removeItem('isLoggedIn');
     sessionStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('authToken');
+    sessionStorage.removeItem('authToken');
     // Clear CRM data to ensure fresh sync on next login
     localStorage.removeItem('clinic_crm_data');
     localStorage.removeItem('leads_quick_status_buttons_v1');

@@ -26,7 +26,7 @@ const Login: React.FC = () => {
     // Simulate a small delay for better UX
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    const success = login(username, password, rememberMe);
+    const success = await login(username, password, rememberMe);
     setIsLoading(false);
 
     if (success) {
