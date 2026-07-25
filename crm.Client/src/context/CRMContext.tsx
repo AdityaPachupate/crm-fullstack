@@ -102,7 +102,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
 
   // Memoize URLs to prevent re-renders from triggering useEffect loops
   const API_BASE_URL = useMemo(() => 
-    (import.meta.env.VITE_API_BASE_URL || 'https://crm-api-1ugj.onrender.com').replace(/\/$/, ''), 
+    (import.meta.env.VITE_API_BASE_URL || 'https://crm-api-vy8f.onrender.com').replace(/\/$/, ''), 
   []);
   
   const LEADS_API_URL = useMemo(() => `${API_BASE_URL}/api/leads`, [API_BASE_URL]);

@@ -25,7 +25,7 @@ services:
       - key: NODE_VERSION
         value: 20
       - key: VITE_API_BASE_URL
-        value: https://crm-api-1ugj.onrender.com
+        value: https://crm-api-vy8f.onrender.com
       - key: VITE_AUTH_USERNAME
         sync: false
       - key: VITE_AUTH_PASSWORD
