@@ -12,4 +12,4 @@ jobs:
     steps:
       - name: Ping Render API
         run: |
-          curl -f https://crm-api-vy8f.onrender.com/api/health/live || echo "API might be starting up..."
+          curl -f https://crm-api-vy8f.onrender.com/api/ping || echo "API might be starting up..."
